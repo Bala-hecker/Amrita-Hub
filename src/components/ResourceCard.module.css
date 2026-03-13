@@ -1,0 +1,72 @@
+/* src/components/ResourceCard.module.css */
+.card {
+  background: white; border-radius: var(--radius);
+  border: 1.5px solid var(--bdr); padding: 18px 18px 14px;
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column;
+  transition: transform .22s, box-shadow .22s, border-color .22s;
+}
+.card::before {
+  content:''; position:absolute; left:0; top:0; bottom:0; width:4px;
+  background: var(--cr); border-radius: 4px 0 0 4px;
+}
+.card:hover { transform: translateY(-3px); box-shadow: var(--sh-lg); border-color: var(--cr); }
+
+.top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
+
+.saveBtn {
+  background: none; color: var(--muted); padding: 3px 4px;
+  border-radius: 6px; transition: color .14s, background .14s;
+  display: flex; align-items: center; flex-shrink: 0;
+}
+.saveBtn:hover { color: var(--gold); background: var(--gold-l); }
+.saveBtn.saved { color: var(--gold); }
+
+.code { font-family: monospace; font-size: .67rem; font-weight: 800;
+        color: var(--cr); text-transform: uppercase; letter-spacing: 1.1px; margin-bottom: 4px; }
+
+.title { font-size: .95rem; font-weight: 600; color: var(--txt);
+         line-height: 1.4; margin-bottom: 5px; }
+
+.coursePill {
+  display: inline-block; font-size: .68rem; background: var(--bg);
+  color: var(--muted); border-radius: 6px; padding: 2px 8px; font-weight: 600;
+  margin-bottom: 8px; max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.desc {
+  font-size: .79rem; color: var(--muted); line-height: 1.56; flex: 1; margin-bottom: 12px;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+.footer {
+  display: flex; justify-content: space-between; align-items: center;
+  border-top: 1px solid var(--bdr); padding-top: 10px; margin-top: auto;
+}
+.uploader { font-size: .72rem; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+.uploaderBy { color: var(--muted); }
+.uploader strong { color: var(--cr); font-weight: 600; }
+
+.actions { display: flex; align-items: center; gap: 6px; }
+
+.linkBtn {
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted); border: 1.5px solid var(--bdr); border-radius: 7px;
+  width: 28px; height: 28px; transition: all .14s;
+}
+.linkBtn:hover { border-color: var(--cr); color: var(--cr); background: var(--cr-ll); }
+
+.voteBtn {
+  display: flex; align-items: center; gap: 5px; background: none;
+  border: 1.5px solid var(--bdr); border-radius: 7px; padding: 4px 10px;
+  font-size: .78rem; font-weight: 600; color: var(--muted); transition: all .14s;
+}
+.commentBtn {
+  display: flex; align-items: center; gap: 5px; background: none;
+  border: 1.5px solid var(--bdr); border-radius: 7px; padding: 4px 10px;
+  font-size: .78rem; font-weight: 600; color: var(--muted); transition: all .14s;
+}
+.commentBtn:hover { border-color: var(--primary); color: var(--primary); background: var(--bg-surface); }
+.voteBtn:hover { border-color: var(--cr); color: var(--cr); background: var(--cr-ll); }
+.voteBtn.voted { border-color: var(--gold); color: var(--gold); background: var(--gold-l); }
