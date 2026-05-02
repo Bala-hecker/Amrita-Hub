@@ -49,11 +49,20 @@ export function useResources() {
       const path = `${user.id}/${Date.now()}_${file.name}`;
       onProgress?.(10);
 
-      const { error: uploadError } = await supabase.storage
-        .from("resources")
-        .upload(path, file, { upsert: false });
+      let uploadError = null;
+      try {
+        const { error } = await supabase.storage
+          .from("resources")
+          .upload(path, file, { upsert: false });
+        uploadError = error;
+      } catch (err) {
+        uploadError = err;
+      }
 
-      if (uploadError) throw new Error("File upload failed: " + uploadError.message);
+      if (uploadError) {
+        console.error("Direct storage upload error:", uploadError);
+        throw new Error("File upload failed: " + (uploadError.message || uploadError));
+      }
       onProgress?.(80);
 
       const { data: urlData } = supabase.storage
