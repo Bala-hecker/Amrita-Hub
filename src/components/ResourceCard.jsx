@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bookmark, Star, ExternalLink, FileText, Video, BookOpen, Newspaper, Dumbbell, MessageSquare } from "lucide-react";
+import { Bookmark, Star, ExternalLink, FileText, Video, BookOpen, Newspaper, Dumbbell, MessageSquare, Trash2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { getCourse } from "../data/curriculum";
 import CommentsModal from "./CommentsModal";
@@ -13,7 +13,7 @@ const TYPE_ICON = {
   Practice: <Dumbbell size={11} />,
 };
 
-export default function ResourceCard({ resource, onVote, onSave }) {
+export default function ResourceCard({ resource, onVote, onSave, onDelete }) {
   const { user } = useAuth();
   const [showComments, setShowComments] = useState(false);
   const hasVoted  = resource.voted_by?.includes(user?.id);
@@ -63,6 +63,20 @@ export default function ResourceCard({ resource, onVote, onSave }) {
             >
               <ExternalLink size={13} />
             </a>
+          )}
+          {user?.id === resource.uploaded_by && onDelete && (
+            <button
+              className={s.linkBtn}
+              style={{ color: "var(--red-light)" }}
+              onClick={() => {
+                if (window.confirm("Are you sure you want to delete this resource? This cannot be undone.")) {
+                  onDelete(resource.id);
+                }
+              }}
+              title="Delete resource"
+            >
+              <Trash2 size={13} />
+            </button>
           )}
           <button
             className={s.commentBtn}

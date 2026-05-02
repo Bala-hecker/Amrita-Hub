@@ -12,7 +12,7 @@ const TYPES = ["All","Notes","PDF","Video","Article","Practice"];
 
 export default function Home() {
   const { user, profile } = useAuth();
-  const { resources, loading, error, addResource, toggleVote, toggleSave } = useResources();
+  const { resources, loading, error, addResource, toggleVote, toggleSave, deleteResource } = useResources();
 
   const [showModal,   setShowModal]   = useState(false);
   const [searchQ,     setSearchQ]     = useState("");
@@ -198,7 +198,7 @@ export default function Home() {
             <div className={s.grid}>
               {filtered.map((r, i) => (
                 <div key={r.id} style={{ animationDelay: `${Math.min(i * 35, 280)}ms` }}>
-                  <ResourceCard resource={r} onVote={toggleVote} onSave={toggleSave} />
+                  <ResourceCard resource={r} onVote={toggleVote} onSave={toggleSave} onDelete={deleteResource} />
                 </div>
               ))}
             </div>

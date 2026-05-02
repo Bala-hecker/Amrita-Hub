@@ -166,6 +166,26 @@ export function useResources() {
     if (error) fetchResources();
   }
 
+  // ── Delete resource ────────────────────────────────────────────────────────
+  async function deleteResource(resourceId) {
+    if (!user) return;
+    const r = resources.find(x => x.id === resourceId);
+    if (!r || r.uploaded_by !== user.id) return;
+
+    // Optimistic UI
+    setResources(prev => prev.filter(x => x.id !== resourceId));
+
+    const { error } = await supabase
+      .from("resources")
+      .delete()
+      .eq("id", resourceId);
+
+    if (error) {
+      console.error("Failed to delete resource:", error);
+      fetchResources(); // Revert on failure
+    }
+  }
+
   return {
     resources,
     loading,
@@ -174,6 +194,7 @@ export function useResources() {
     toggleVote,
     toggleSave,
     addComment,
+    deleteResource,
     refetch: fetchResources,
   };
 }
