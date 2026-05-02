@@ -5,8 +5,16 @@ import { useAuth } from "../context/AuthContext";
 
 export function useResources() {
   const { user, profile } = useAuth();
-  const [resources, setResources] = useState([]);
-  const [loading,   setLoading]   = useState(true);
+  // Load from sessionStorage optimistically for instant refresh
+  const [resources, setResources] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem("amrita_resources_cache");
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [loading,   setLoading]   = useState(resources.length === 0);
   const [error,     setError]     = useState(null);
 
   const fetchResources = useCallback(async () => {
@@ -22,6 +30,9 @@ export function useResources() {
       console.error(err);
     } else {
       setResources(data || []);
+      try {
+        sessionStorage.setItem("amrita_resources_cache", JSON.stringify(data || []));
+      } catch (e) {}
     }
     setLoading(false);
   }, []);
