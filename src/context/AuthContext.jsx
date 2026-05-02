@@ -10,12 +10,21 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id);
-      else setLoading(false);
-    });
+    try {
+      // Get initial session
+      supabase.auth.getSession().then(({ data: { session }, error }) => {
+        if (error) throw error;
+        setUser(session?.user ?? null);
+        if (session?.user) fetchProfile(session.user.id);
+        else setLoading(false);
+      }).catch(err => {
+        console.error("Supabase getSession error:", err);
+        setLoading(false);
+      });
+    } catch (err) {
+      console.error("Supabase sync error:", err);
+      setLoading(false);
+    }
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
