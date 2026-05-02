@@ -38,3 +38,12 @@ root.render(
     </ErrorBoundary>
   </React.StrictMode>
 );
+
+// Unregister any old service workers from the previous Firebase version
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.ready.then(registration => {
+    registration.unregister();
+  }).catch(error => {
+    console.error(error.message);
+  });
+}
