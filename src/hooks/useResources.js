@@ -18,9 +18,6 @@ export function useResources() {
   const [error,     setError]     = useState(null);
 
   const fetchResources = useCallback(async () => {
-    if (resources.length === 0) {
-      setLoading(true);
-    }
     setError(null);
     const { data, error: err } = await supabase
       .from("resources")
