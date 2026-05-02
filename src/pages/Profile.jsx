@@ -6,7 +6,7 @@ import { User, Upload, Star, Bookmark } from "lucide-react";
 
 export default function Profile() {
   const { user, profile } = useAuth();
-  const { resources, toggleVote, toggleSave } = useResources();
+  const { resources, toggleVote, toggleSave, deleteResource } = useResources();
 
   if (!user) return null;
 
@@ -16,7 +16,7 @@ export default function Profile() {
   const totalUpvotesReceived = userUploads.reduce((acc, curr) => acc + (curr.votes || 0), 0);
   
   // Calculate total saved items
-  const totalSaved = profile?.savedResources?.length || 0;
+  const totalSaved = resources.filter(r => Array.isArray(r.saved_by) && r.saved_by.includes(user.id)).length;
 
   const initials = (profile?.name || user.displayName || "?")
     .split(" ")
@@ -26,10 +26,10 @@ export default function Profile() {
     .slice(0, 2);
 
   return (
-    <div className="page-container anim-fadeUp">
-      <div className="page-header">
-        <h1 className="page-title">User Profile</h1>
-        <p className="page-subtitle">View your stats and manage your uploads</p>
+    <div className="page-container anim-fadeUp" style={{ maxWidth: "1200px", margin: "0 auto", padding: "2rem 1.5rem" }}>
+      <div className="page-header" style={{ marginBottom: "2.5rem" }}>
+        <h1 className="page-title" style={{ fontSize: "2.25rem", fontWeight: 900, color: "#1a1f36", letterSpacing: "-0.03em" }}>Account Profile</h1>
+        <p className="page-subtitle" style={{ color: "#718096", fontSize: "1rem" }}>View your personal upload statistics and manage your study resources</p>
       </div>
 
       <div className={s.profileHeader}>
@@ -46,21 +46,27 @@ export default function Profile() {
 
       <div className={s.statsGrid}>
         <div className={s.statCard}>
-          <Upload className={s.statIcon} size={24} />
+          <div className={s.statIconWrapper}>
+            <Upload size={22} />
+          </div>
           <div className={s.statInfo}>
             <span className={s.statValue}>{userUploads.length}</span>
             <span className={s.statLabel}>Uploads</span>
           </div>
         </div>
         <div className={s.statCard}>
-          <Star className={s.statIcon} size={24} />
+          <div className={s.statIconWrapper}>
+            <Star size={22} />
+          </div>
           <div className={s.statInfo}>
             <span className={s.statValue}>{totalUpvotesReceived}</span>
             <span className={s.statLabel}>Upvotes Received</span>
           </div>
         </div>
         <div className={s.statCard}>
-          <Bookmark className={s.statIcon} size={24} />
+          <div className={s.statIconWrapper}>
+            <Bookmark size={22} />
+          </div>
           <div className={s.statInfo}>
             <span className={s.statValue}>{totalSaved}</span>
             <span className={s.statLabel}>Saved Items</span>
@@ -68,11 +74,13 @@ export default function Profile() {
         </div>
       </div>
 
-      <h3 className={s.sectionTitle}>Your Uploads</h3>
+      <h3 className={s.sectionTitle}>
+        <Upload size={18} /> Your Uploads
+      </h3>
       {userUploads.length === 0 ? (
         <div className={s.emptyState}>
-          <Upload size={48} className={s.emptyIcon} />
-          <p className={s.emptyText}>You haven&#39;t uploaded any resources yet.</p>
+          <Upload size={42} className={s.emptyIcon} />
+          <p className={s.emptyText}>You haven&#39;t shared any resources yet.</p>
         </div>
       ) : (
         <div className={s.grid}>
@@ -82,6 +90,7 @@ export default function Profile() {
               resource={resource}
               onVote={() => toggleVote(resource.id)}
               onSave={() => toggleSave(resource.id)}
+              onDelete={deleteResource}
             />
           ))}
         </div>
