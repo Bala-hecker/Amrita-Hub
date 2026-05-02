@@ -9,6 +9,18 @@ if (supabaseUrl === "missing" || supabaseKey === "missing") {
 }
 
 // We will only create the client if the URL is valid, to prevent white-screen crashes
-export const supabase = supabaseUrl !== "missing" 
-  ? createClient(supabaseUrl, supabaseKey) 
-  : null;
+let supabaseInstance = null;
+try {
+  if (supabaseUrl !== "missing" && supabaseKey !== "missing") {
+    supabaseInstance = createClient(supabaseUrl, supabaseKey);
+  }
+} catch (error) {
+  console.error("CRITICAL ERROR: Failed to initialize Supabase client. LocalStorage might be corrupted.", error);
+  // Optional: clear local storage if Supabase crashes on init
+  if (typeof window !== 'undefined') {
+    localStorage.clear();
+    window.location.reload();
+  }
+}
+
+export const supabase = supabaseInstance;
