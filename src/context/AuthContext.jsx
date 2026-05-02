@@ -83,7 +83,7 @@ export function AuthProvider({ children }) {
     if (error) throw error;
     if (data?.user) {
       setUser(data.user);
-      await fetchProfile(data.user.id);
+      fetchProfile(data.user.id); // Trigger in the background
     }
   }
 
