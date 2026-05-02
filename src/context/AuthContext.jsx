@@ -78,7 +78,11 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, register, login, logout }}>
-      {!loading && children}
+      {loading ? (
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", fontFamily: "sans-serif", color: "#333" }}>
+          <h2>Loading AmritaHub...</h2>
+        </div>
+      ) : children}
     </AuthContext.Provider>
   );
 }
