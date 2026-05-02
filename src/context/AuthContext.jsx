@@ -47,6 +47,10 @@ export function AuthProvider({ children }) {
   }, []);
 
   async function fetchProfile(uid) {
+    if (profile && profile.id === uid) {
+      setLoading(false);
+      return;
+    }
     try {
       const { data } = await supabase
         .from("profiles")
