@@ -30,14 +30,20 @@ export default function Login() {
   async function onSubmit(data) {
     setAuthError("");
     setLoading(true);
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 2000);
+
     try {
       await login(data.email, data.password);
+      clearTimeout(timer);
+      setLoading(false);
       navigate("/");
     } catch (err) {
+      clearTimeout(timer);
+      setLoading(false);
       console.error("Supabase login error:", err);
       setAuthError(err.message || "Login failed. Please try again.");
-    } finally {
-      setLoading(false);
     }
   }
 
