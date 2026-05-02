@@ -19,7 +19,19 @@ function Layout() {
   </>;
 }
 
+import { supabase } from "./supabase";
+
 export default function App() {
+  if (!supabase) {
+    return (
+      <div style={{ padding: "50px", textAlign: "center", color: "red", fontFamily: "sans-serif" }}>
+        <h1>⚠️ Vercel Configuration Error</h1>
+        <p>The Supabase Environment Variables are missing in Vercel!</p>
+        <p>Please go to Vercel Settings -&gt; Environment Variables, ensure REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY are added, check all boxes (Production, Preview, Development), and Redeploy.</p>
+      </div>
+    );
+  }
+
   return (
     <AuthProvider>
       <BrowserRouter>
