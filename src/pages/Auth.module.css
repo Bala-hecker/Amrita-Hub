@@ -1,0 +1,63 @@
+/* src/pages/Auth.module.css */
+.page {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  padding: 20px 16px;
+  background: linear-gradient(140deg, var(--cr-d) 0%, var(--cr) 55%, #e8004a 100%);
+  position: relative; overflow: hidden;
+}
+.page::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse at 72% 20%, rgba(255,255,255,.07) 0%, transparent 52%),
+    radial-gradient(ellipse at 10% 85%, rgba(245,166,35,.14) 0%, transparent 48%);
+}
+/* Decorative circles */
+.page::after {
+  content: ''; position: absolute;
+  width: 320px; height: 320px; border-radius: 50%;
+  border: 60px solid rgba(255,255,255,.04);
+  top: -80px; right: -80px; pointer-events: none;
+}
+
+.card {
+  background: white; border-radius: 22px;
+  padding: 40px 36px; width: 100%; max-width: 440px;
+  box-shadow: 0 32px 80px rgba(0,0,0,.28);
+  position: relative; animation: slideUp .45s ease;
+}
+
+/* Logo */
+.logo        { text-align: center; margin-bottom: 28px; }
+.logoMark    { display: flex; align-items: baseline; justify-content: center; gap: 1px; line-height: 1; }
+.logoA       { font-family: 'Playfair Display', serif; font-size: 2.1rem; font-weight: 700; color: var(--cr); }
+.logoH       { font-family: 'Playfair Display', serif; font-size: 2.1rem; font-weight: 900; color: var(--txt); }
+.logoSub     { font-size: .72rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 6px; }
+
+/* Tabs */
+.tabs {
+  display: flex; background: var(--bg); border-radius: 10px;
+  padding: 4px; margin-bottom: 24px; gap: 4px;
+}
+.tab {
+  flex: 1; text-align: center; padding: 9px; border-radius: 8px;
+  font-size: .88rem; font-weight: 600; color: var(--muted);
+  text-decoration: none; transition: all .18s;
+}
+.tab:hover { color: var(--cr); }
+.tabActive  { background: var(--cr) !important; color: white !important;
+              box-shadow: 0 2px 10px rgba(192,0,60,.28); }
+
+.form   { display: flex; flex-direction: column; gap: 14px; }
+.error  {
+  background: var(--cr-l); color: var(--cr);
+  border-radius: 8px; padding: 10px 14px; font-size: .84rem; font-weight: 500;
+}
+.switch     { text-align: center; margin-top: 16px; font-size: .82rem; color: var(--muted); }
+.switchLink { color: var(--cr); font-weight: 600; }
+.switchLink:hover { text-decoration: underline; }
+.spin { animation: spin .7s linear infinite; }
+
+@media (max-width: 480px) {
+  .card   { padding: 32px 20px; }
+  .logoA, .logoH { font-size: 1.75rem; }
+}

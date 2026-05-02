@@ -1,0 +1,26 @@
+// firestore.rules
+// After setup: Firebase Console → Firestore → Rules → paste this → Publish
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Each user can only read/write their own profile
+    match /users/{userId} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth.uid == userId;
+    }
+
+    // Resources: any logged-in user can read & create.
+    // Only the original uploader can delete.
+    // Any logged-in user can update (for votes/saves).
+    match /resources/{resourceId} {
+      allow read:   if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.data.uploadedBy == request.auth.uid;
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null
+                    && resource.data.uploadedBy == request.auth.uid;
+    }
+  }
+}
