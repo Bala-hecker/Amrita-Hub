@@ -13,7 +13,7 @@ export function AuthProvider({ children }) {
     // Timeout fallback to prevent infinite loading screens
     const timer = setTimeout(() => {
       setLoading(false);
-    }, 3000);
+    }, 1500);
 
     try {
       // Get initial session
