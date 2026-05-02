@@ -15,6 +15,7 @@ export function AuthProvider({ children }) {
       setLoading(false);
     }, 1500);
 
+    let unsub = null;
     try {
       // Get initial session
       supabase.auth.getSession().then(({ data: { session }, error }) => {
@@ -26,23 +27,22 @@ export function AuthProvider({ children }) {
         console.error("Supabase getSession error:", err);
         setLoading(false);
       });
-    } catch (err) {
-      console.error("Supabase sync error:", err);
-      setLoading(false);
-    }
 
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      // Listen for auth state changes
+      const res = supabase.auth.onAuthStateChange(async (_event, session) => {
         setUser(session?.user ?? null);
         if (session?.user) await fetchProfile(session.user.id);
         else { setProfile(null); setLoading(false); }
-      }
-    );
+      });
+      if (res?.data?.subscription) unsub = res.data.subscription;
+    } catch (err) {
+      console.error("Auth initialization error:", err);
+      setLoading(false);
+    }
 
     return () => {
       clearTimeout(timer);
-      subscription.unsubscribe();
+      if (unsub?.unsubscribe) unsub.unsubscribe();
     };
   }, []);
 
