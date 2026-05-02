@@ -75,16 +75,23 @@ export function AuthProvider({ children }) {
   }
 
   async function login(email, password) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
+    if (data?.user) {
+      setUser(data.user);
+      await fetchProfile(data.user.id);
+    }
   }
 
   async function logout() {
-    await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
     try {
+      localStorage.clear();
       sessionStorage.clear();
+    } catch (e) {}
+    try {
+      await supabase.auth.signOut();
     } catch (e) {}
   }
 
