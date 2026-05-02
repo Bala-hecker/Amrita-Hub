@@ -5,10 +5,10 @@ import { useAuth } from "../context/AuthContext";
 
 export function useResources() {
   const { user, profile } = useAuth();
-  // Load from sessionStorage optimistically for instant refresh
+  // Load from localStorage optimistically for permanent instant refresh
   const [resources, setResources] = useState(() => {
     try {
-      const cached = sessionStorage.getItem("amrita_resources_cache");
+      const cached = localStorage.getItem("amrita_resources_cache");
       return cached ? JSON.parse(cached) : [];
     } catch {
       return [];
@@ -30,7 +30,7 @@ export function useResources() {
     } else {
       setResources(data || []);
       try {
-        sessionStorage.setItem("amrita_resources_cache", JSON.stringify(data || []));
+        localStorage.setItem("amrita_resources_cache", JSON.stringify(data || []));
       } catch (e) {}
     }
     setLoading(false);
