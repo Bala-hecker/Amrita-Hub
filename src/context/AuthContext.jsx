@@ -81,7 +81,11 @@ export function AuthProvider({ children }) {
 
   async function logout() {
     await supabase.auth.signOut();
+    setUser(null);
     setProfile(null);
+    try {
+      sessionStorage.clear();
+    } catch (e) {}
   }
 
   return (
