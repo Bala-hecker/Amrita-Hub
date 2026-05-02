@@ -22,22 +22,27 @@ export default function Home() {
   const [sideOpen,    setSideOpen]    = useState(false);
 
   const filtered = useMemo(() => {
-    let list = [...resources];
-    if (filterSub  !== "All") list = list.filter(r => r.course_code === filterSub);
-    if (filterType !== "All") list = list.filter(r => r.type         === filterType);
-    if (searchQ) {
-      const q = searchQ.toLowerCase();
-      list = list.filter(r =>
-        r.title.toLowerCase().includes(q) ||
-        r.course_code.toLowerCase().includes(q) ||
-        r.description?.toLowerCase().includes(q) ||
-        r.uploader_name?.toLowerCase().includes(q)
-      );
+    try {
+      let list = [...resources];
+      if (filterSub  !== "All") list = list.filter(r => r.course_code === filterSub);
+      if (filterType !== "All") list = list.filter(r => r.type         === filterType);
+      if (searchQ) {
+        const q = searchQ.toLowerCase();
+        list = list.filter(r =>
+          r.title.toLowerCase().includes(q) ||
+          r.course_code.toLowerCase().includes(q) ||
+          r.description?.toLowerCase().includes(q) ||
+          r.uploader_name?.toLowerCase().includes(q)
+        );
+      }
+      if (sort === "votes")  list.sort((a,b) => (b.votes || 0) - (a.votes || 0));
+      if (sort === "recent") list.sort((a,b) => new Date(b.created_at||0) - new Date(a.created_at||0));
+      if (sort === "mine")   list = list.filter(r => r.uploaded_by === user?.id);
+      return list;
+    } catch (err) {
+      console.error("Filtered useMemo error:", err);
+      return resources;
     }
-    if (sort === "votes")  list.sort((a,b) => b.votes - a.votes);
-    if (sort === "recent") list.sort((a,b) => new Date(b.created_at||0) - new Date(a.created_at||0));
-    if (sort === "mine")   list = list.filter(r => r.uploaded_by === user?.id);
-    return list;
   }, [resources, filterSub, filterType, searchQ, sort, user]);
 
   const countByCode = useMemo(() => {
@@ -46,11 +51,22 @@ export default function Home() {
     return m;
   }, [resources]);
 
-  const top5 = useMemo(() =>
-    [...resources].sort((a,b) => b.votes - a.votes).slice(0,5), [resources]);
+  const top5 = useMemo(() => {
+    try {
+      return [...resources].sort((a,b) => (b.votes || 0) - (a.votes || 0)).slice(0,5);
+    } catch {
+      return [];
+    }
+  }, [resources]);
 
   const firstName = profile?.name?.split(" ")[0] || "Student";
-  const savedCount = resources.filter(r => r.saved_by?.includes(user?.id)).length;
+  const savedCount = useMemo(() => {
+    try {
+      return resources.filter(r => Array.isArray(r.saved_by) && r.saved_by.includes(user?.id)).length;
+    } catch {
+      return 0;
+    }
+  }, [resources, user]);
 
   return (
     <div className={s.page}>
