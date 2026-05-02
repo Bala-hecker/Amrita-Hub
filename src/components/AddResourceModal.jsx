@@ -31,7 +31,7 @@ export default function AddResourceModal({ onClose, onSubmit }) {
       onClose();
     } catch (err) {
       console.error(err);
-      setError(err.message?.includes("storage") ? "File upload failed. Check Firebase Storage is enabled." : err.message || "Something went wrong.");
+      setError(err.message || "Something went wrong.");
     } finally {
       setLoading(false);
     }

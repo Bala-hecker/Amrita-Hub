@@ -83,13 +83,13 @@ export function useResources() {
     const { data, error: insertError } = await supabase
       .from("resources")
       .insert(newResource)
-      .select()
-      .single();
+      .select();
 
     if (insertError) throw new Error(insertError.message);
+    const insertedItem = (data && data.length > 0) ? data[0] : { ...newResource, id: Date.now().toString() };
 
     // Optimistic update
-    setResources(prev => [data, ...prev]);
+    setResources(prev => [insertedItem, ...prev]);
   }
 
   // ── Toggle upvote ────────────────────────────────────────────────────────
