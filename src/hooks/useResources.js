@@ -46,7 +46,7 @@ export function useResources() {
     let fileName = "";
 
     if (file) {
-      const path = `${user.id}/${Date.now()}_${file.name}`;
+      const path = `${Date.now()}_${file.name}`;
       onProgress?.(10);
 
       let uploadError = null;
