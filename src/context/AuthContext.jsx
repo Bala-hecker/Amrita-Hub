@@ -10,6 +10,11 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Timeout fallback to prevent infinite loading screens
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 3000);
+
     try {
       // Get initial session
       supabase.auth.getSession().then(({ data: { session }, error }) => {
@@ -35,7 +40,10 @@ export function AuthProvider({ children }) {
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(timer);
+      subscription.unsubscribe();
+    };
   }, []);
 
   async function fetchProfile(uid) {
