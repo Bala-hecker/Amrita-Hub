@@ -106,8 +106,8 @@ export default function AddResourceModal({ onClose, onSubmit }) {
                 accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.zip,.png,.jpg"
                 onChange={e => { 
                   const f = e.target.files[0];
-                  if (f && f.size > 15 * 1024 * 1024) {
-                    setError("File must be smaller than 15MB.");
+                  if (f && f.size > 20 * 1024 * 1024) {
+                    setError("File must be smaller than 20MB.");
                     setFile(null);
                   } else {
                     setFile(f); 
