@@ -56,6 +56,13 @@ export function useResources() {
   async function addResource({ title, courseCode, type, link, description, file }, onProgress) {
     if (!user) throw new Error("Not authenticated");
 
+    // Ensure we have a valid session before doing anything.
+    // getSession() automatically refreshes the token if it's expired.
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData?.session) {
+      throw new Error("Your session has expired. Please log out and log back in.");
+    }
+
     let fileURL  = link?.trim() || "";
     let fileName = "";
 
