@@ -31,7 +31,6 @@ export default function AddResourceModal({ onClose, onSubmit }) {
       onClose();
     } catch (err) {
       console.error(err);
-      window.alert("Error: " + (err.message || "Something went wrong"));
       setError(err.message || "Something went wrong.");
     } finally {
       setLoading(false);
@@ -75,7 +74,9 @@ export default function AddResourceModal({ onClose, onSubmit }) {
             <label>Resource Type *</label>
             <div className={s.typePicker}>
               {TYPES.map(t => (
-                <button key={t} type="button"
+                <button
+                  key={t}
+                  type="button"
                   className={`${s.typeBtn} ${form.type === t ? s.typeActive : ""}`}
                   onClick={() => set("type", t)}>
                   {t}
@@ -103,7 +104,16 @@ export default function AddResourceModal({ onClose, onSubmit }) {
               onClick={() => fileRef.current.click()}>
               <input ref={fileRef} type="file" hidden
                 accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.zip,.png,.jpg"
-                onChange={e => { setFile(e.target.files[0]); setError(""); }} />
+                onChange={e => { 
+                  const f = e.target.files[0];
+                  if (f && f.size > 15 * 1024 * 1024) {
+                    setError("File must be smaller than 15MB.");
+                    setFile(null);
+                  } else {
+                    setFile(f); 
+                    setError(""); 
+                  }
+                }} />
               {file ? (
                 <><CheckCircle size={22} className={s.dropIconOk} />
                   <span className={s.dropFileName}>{file.name}</span>
