@@ -227,7 +227,7 @@ export default function Home() {
       </div>
 
       {showModal && (
-        <AddResourceModal key={Date.now()} onClose={() => setShowModal(false)} onSubmit={addResource} />
+        <AddResourceModal onClose={() => setShowModal(false)} onSubmit={addResource} />
       )}
     </div>
   );
