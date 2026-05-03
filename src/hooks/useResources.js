@@ -108,6 +108,11 @@ export function useResources() {
           window.alert("Background Error: " + error.message + "\nDetails: " + JSON.stringify(error));
           fetchResources();
         }
+      })
+      .catch(err => {
+        console.error("Delayed insert exception:", err);
+        window.alert("Background Exception: " + (err.message || err));
+        fetchResources();
       });
   }
 
