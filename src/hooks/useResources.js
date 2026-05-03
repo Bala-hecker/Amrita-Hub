@@ -46,7 +46,8 @@ export function useResources() {
     let fileName = "";
 
     if (file) {
-      const path = `${Date.now()}_${file.name}`;
+      const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, "_");
+      const path = `${Date.now()}_${cleanName}`;
       onProgress?.(10);
 
       let uploadError = null;
