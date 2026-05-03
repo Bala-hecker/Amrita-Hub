@@ -38,6 +38,7 @@ export default function AddResourceModal({ onClose, onSubmit }) {
     } catch (err) {
       clearTimeout(timer);
       console.error(err);
+      window.alert("Error: " + (err.message || "Something went wrong"));
       setError(err.message || "Something went wrong.");
     } finally {
       setLoading(false);
