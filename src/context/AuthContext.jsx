@@ -72,11 +72,35 @@ export function AuthProvider({ children }) {
   }
 
   async function login(email, password) {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    if (data?.user) {
+    const res = await fetch(`${process.env.REACT_APP_SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": process.env.REACT_APP_SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error_description || errData.error || "Invalid email or password");
+    }
+
+    const data = await res.json();
+    if (data?.user && data?.access_token) {
+      const expiresAt = Math.floor(Date.now() / 1000) + (data.expires_in || 3600);
+      const sessionObj = {
+        ...data,
+        expires_at: expiresAt,
+      };
+
+      try {
+        localStorage.setItem("sb-bkugqqsjnrcrxgomjvda-auth-token", JSON.stringify(sessionObj));
+        localStorage.setItem("amritahub-auth", JSON.stringify(sessionObj));
+      } catch (e) {}
+
       setUser(data.user);
-      fetchProfile(data.user.id); // Trigger in the background, DO NOT await!
+      fetchProfile(data.user.id);
     }
   }
 
