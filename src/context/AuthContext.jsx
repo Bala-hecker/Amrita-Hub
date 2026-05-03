@@ -34,8 +34,8 @@ export function AuthProvider({ children }) {
       setLoading(false);
     }
 
-    // Safety fallback: if onAuthStateChange never fires within 5 seconds, unblock the UI
-    const fallback = setTimeout(() => setLoading(false), 5000);
+    // Safety fallback: if onAuthStateChange never fires within 2 seconds, unblock the UI
+    const fallback = setTimeout(() => setLoading(false), 2000);
 
     return () => {
       clearTimeout(fallback);
