@@ -41,8 +41,10 @@ root.render(
 
 // Unregister any old service workers from the previous Firebase version
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.ready.then(registration => {
-    registration.unregister();
+  navigator.serviceWorker.getRegistrations().then(registrations => {
+    for (const registration of registrations) {
+      registration.unregister();
+    }
   }).catch(error => {
     console.error(error.message);
   });
