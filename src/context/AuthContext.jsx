@@ -52,14 +52,28 @@ export function AuthProvider({ children }) {
       return;
     }
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", uid)
         .single();
-      setProfile(data);
-    } catch { /* ignore */ }
-    finally { setLoading(false); }
+
+      if (data) {
+        setProfile(data);
+      } else {
+        // Automatically create missing profile row for old user accounts
+        const { data: newProfile } = await supabase
+          .from("profiles")
+          .insert({ id: uid, name: user?.user_metadata?.name || "Student", department: "CSE" })
+          .select()
+          .single();
+        if (newProfile) setProfile(newProfile);
+      }
+    } catch {
+      setProfile({ id: uid, name: user?.user_metadata?.name || "Student", department: "CSE" });
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function register(name, email, password, year) {
