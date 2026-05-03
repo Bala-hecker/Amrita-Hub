@@ -67,11 +67,25 @@ export function useResources() {
       onProgress?.(10);
 
       let uploadError = null;
+      let fakeProgressInterval;
+      
       try {
+        // Start faking progress to show it is active
+        let currentProg = 10;
+        fakeProgressInterval = setInterval(() => {
+          currentProg += Math.floor(Math.random() * 5) + 2;
+          if (currentProg > 75) currentProg = 75; // cap at 75% until finished
+          onProgress?.(currentProg);
+        }, 500);
+
         // Race the upload against a 20-second timeout to prevent infinite hangs
         const uploadPromise = supabase.storage
           .from("resources")
-          .upload(path, file, { upsert: false });
+          .upload(path, file, { 
+            upsert: false,
+            cacheControl: '3600',
+            contentType: file.type || 'application/octet-stream'
+          });
           
         const timeoutPromise = new Promise((_, reject) => 
           setTimeout(() => reject(new Error("Upload timed out after 20 seconds. Please check your internet connection or try a smaller file.")), 20000)
@@ -81,6 +95,8 @@ export function useResources() {
         uploadError = error;
       } catch (err) {
         uploadError = err;
+      } finally {
+        clearInterval(fakeProgressInterval);
       }
 
       if (uploadError) {
