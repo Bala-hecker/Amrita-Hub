@@ -78,27 +78,35 @@ export function useResources() {
           onProgress?.(currentProg);
         }, 500);
 
-        // We use native fetch to completely bypass any supabase-js bugs!
-        const { data: sessionData } = await supabase.auth.getSession();
-        const token = sessionData?.session?.access_token || process.env.REACT_APP_SUPABASE_ANON_KEY;
+        // Wrap the entire process in a timeout in case Supabase localStorage lock is frozen
+        const uploadTask = async () => {
+          const { data: sessionData } = await supabase.auth.getSession();
+          const token = sessionData?.session?.access_token || process.env.REACT_APP_SUPABASE_ANON_KEY;
 
-        const uploadUrl = `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/resources/${path}`;
-        
-        const res = await fetch(uploadUrl, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "apikey": process.env.REACT_APP_SUPABASE_ANON_KEY,
-            "Content-Type": file.type || "application/octet-stream",
-            "Cache-Control": "3600"
-          },
-          body: file
-        });
+          const uploadUrl = `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/resources/${path}`;
+          
+          const res = await fetch(uploadUrl, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "apikey": process.env.REACT_APP_SUPABASE_ANON_KEY,
+              "Content-Type": file.type || "application/octet-stream",
+              "Cache-Control": "3600"
+            },
+            body: file
+          });
 
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.message || `HTTP ${res.status} ${res.statusText}`);
-        }
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.message || `HTTP ${res.status} ${res.statusText}`);
+          }
+        };
+
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Browser connection frozen. Please restart your browser.")), 20000)
+        );
+
+        await Promise.race([uploadTask(), timeoutPromise]);
         
         clearInterval(fakeProgressInterval);
       } catch (err) {
