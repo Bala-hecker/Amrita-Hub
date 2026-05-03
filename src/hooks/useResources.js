@@ -4,8 +4,7 @@ import { supabase } from "../supabase";
 import { useAuth } from "../context/AuthContext";
 
 export function useResources() {
-  const { user, profile, session } = useAuth();
-  // Load from localStorage optimistically for permanent instant refresh
+  const { user, profile } = useAuth();
   const [resources, setResources] = useState(() => {
     try {
       const cached = localStorage.getItem("amrita_resources_cache");
@@ -36,18 +35,17 @@ export function useResources() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { 
-    fetchResources(); 
-    
-    // Auto-refresh when the user switches back to this tab
+  useEffect(() => {
+    fetchResources();
+
     const handleFocus = () => {
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState === "visible") {
         fetchResources();
       }
     };
     document.addEventListener("visibilitychange", handleFocus);
     window.addEventListener("focus", handleFocus);
-    
+
     return () => {
       document.removeEventListener("visibilitychange", handleFocus);
       window.removeEventListener("focus", handleFocus);
@@ -57,32 +55,6 @@ export function useResources() {
   // ── Add resource (file upload OR link) ──────────────────────────────────
   async function addResource({ title, courseCode, type, link, description, file }, onProgress) {
     if (!user) throw new Error("Not authenticated");
-
-    // ALWAYS get a fresh token before any operation.
-    // We race refreshSession() against a 5s timeout because it can hang
-    // on iPhones/Safari when localStorage is locked.
-    let freshToken;
-    try {
-      const refreshPromise = supabase.auth.refreshSession();
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("REFRESH_TIMEOUT")), 5000)
-      );
-      const { data: refreshData, error: refreshError } = await Promise.race([refreshPromise, timeoutPromise]);
-      if (!refreshError && refreshData?.session?.access_token) {
-        freshToken = refreshData.session.access_token;
-      }
-    } catch (e) {
-      // refreshSession hung or failed — fall back to cached session token
-    }
-
-    // Fall back to the session already loaded in memory from AuthContext
-    if (!freshToken && session?.access_token) {
-      freshToken = session.access_token;
-    }
-
-    if (!freshToken) {
-      throw new Error("Session expired. Please log out and log in again.");
-    }
 
     let fileURL  = link?.trim() || "";
     let fileName = "";
@@ -94,9 +66,8 @@ export function useResources() {
 
       let uploadError = null;
       let fakeProgressInterval;
-      
+
       try {
-        // Start faking progress to show it is active
         let currentProg = 10;
         fakeProgressInterval = setInterval(() => {
           currentProg += Math.floor(Math.random() * 5) + 2;
@@ -104,38 +75,11 @@ export function useResources() {
           onProgress?.(currentProg);
         }, 500);
 
-        // ALWAYS force-refresh the session token before uploading.
-        // This fixes the "need to clear cache every time" bug caused by stale tokens.
-        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-        if (refreshError || !refreshData?.session) {
-          throw new Error("Your login session expired. Please log out and log in again.");
-        }
-        const token = refreshData.session.access_token;
+        const { error } = await supabase.storage
+          .from("resources")
+          .upload(path, file, { upsert: false });
 
-        const uploadUrl = `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/resources/${path}`;
-        
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("Upload timed out. Check your internet connection.")), 25000)
-        );
-
-        const fetchPromise = fetch(uploadUrl, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "apikey": process.env.REACT_APP_SUPABASE_ANON_KEY,
-            "Content-Type": file.type || "application/octet-stream",
-            "Cache-Control": "3600"
-          },
-          body: file
-        }).then(async res => {
-          if (!res.ok) {
-            const errData = await res.json().catch(() => ({}));
-            throw new Error(errData.message || `Upload failed: HTTP ${res.status}`);
-          }
-          return res;
-        });
-
-        await Promise.race([fetchPromise, timeoutPromise]);
+        if (error) throw error;
         clearInterval(fakeProgressInterval);
       } catch (err) {
         uploadError = err;
@@ -143,15 +87,10 @@ export function useResources() {
         clearInterval(fakeProgressInterval);
       }
 
-      if (uploadError) {
-        throw new Error(uploadError.message || "File upload failed");
-      }
+      if (uploadError) throw new Error("File upload failed: " + uploadError.message);
       onProgress?.(80);
 
-      const { data: urlData } = supabase.storage
-        .from("resources")
-        .getPublicUrl(path);
-
+      const { data: urlData } = supabase.storage.from("resources").getPublicUrl(path);
       fileURL  = urlData.publicUrl;
       fileName = file.name;
       onProgress?.(100);
@@ -172,32 +111,17 @@ export function useResources() {
       comments:      [],
     };
 
-    // Send the database insert using raw REST with the freshly-refreshed token
-    const insertRes = await fetch(
-      `${process.env.REACT_APP_SUPABASE_URL}/rest/v1/resources`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Prefer": "return=representation",
-          "Authorization": `Bearer ${freshToken}`,
-          "apikey": process.env.REACT_APP_SUPABASE_ANON_KEY,
-        },
-        body: JSON.stringify(newResource),
-      }
-    );
+    const { data, error: insertError } = await supabase
+      .from("resources")
+      .insert(newResource)
+      .select();
 
-    if (!insertRes.ok) {
-      const errData = await insertRes.json().catch(() => ({}));
-      throw new Error(errData.message || `Database insert failed: HTTP ${insertRes.status}`);
-    }
+    if (insertError) throw new Error(insertError.message);
 
-    const data = await insertRes.json().catch(() => null);
-    const insertedItem = (Array.isArray(data) && data.length > 0)
+    const insertedItem = (data && data.length > 0)
       ? data[0]
       : { ...newResource, id: Date.now().toString(), created_at: new Date().toISOString() };
 
-    // Update UI only after successful database insert
     setResources(prev => [insertedItem, ...prev]);
 
     try {
@@ -217,7 +141,6 @@ export function useResources() {
       : [...(r.voted_by || []), user.id];
     const newVotes   = hasVoted ? (r.votes || 1) - 1 : (r.votes || 0) + 1;
 
-    // Optimistic UI
     setResources(prev => prev.map(x =>
       x.id === resourceId
         ? { ...x, votes: newVotes, voted_by: newVotedBy }
@@ -243,7 +166,6 @@ export function useResources() {
       ? r.saved_by.filter(id => id !== user.id)
       : [...(r.saved_by || []), user.id];
 
-    // Optimistic UI
     setResources(prev => prev.map(x =>
       x.id === resourceId
         ? { ...x, saved_by: newSavedBy }
@@ -274,7 +196,6 @@ export function useResources() {
 
     const updatedComments = [...(r.comments || []), newComment];
 
-    // Optimistic UI
     setResources(prev => prev.map(x =>
       x.id === resourceId
         ? { ...x, comments: updatedComments }
@@ -295,7 +216,6 @@ export function useResources() {
     const r = resources.find(x => x.id === resourceId);
     if (!r || r.uploaded_by !== user.id) return;
 
-    // Optimistic UI
     setResources(prev => prev.filter(x => x.id !== resourceId));
 
     const { error } = await supabase
@@ -305,7 +225,7 @@ export function useResources() {
 
     if (error) {
       console.error("Failed to delete resource:", error);
-      fetchResources(); // Revert on failure
+      fetchResources();
     }
   }
 
