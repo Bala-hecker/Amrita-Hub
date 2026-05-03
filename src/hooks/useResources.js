@@ -56,6 +56,21 @@ export function useResources() {
   async function addResource({ title, courseCode, type, link, description, file }, onProgress) {
     if (!user) throw new Error("Not authenticated");
 
+    let token = process.env.REACT_APP_SUPABASE_ANON_KEY;
+    try {
+      const stored = localStorage.getItem("sb-bkugqqsjnrcrxgomjvda-auth-token") ||
+                     localStorage.getItem("amritahub-auth") ||
+                     localStorage.getItem("supabase.auth.token");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.access_token) {
+          token = parsed.access_token;
+        } else if (parsed?.currentSession?.access_token) {
+          token = parsed.currentSession.access_token;
+        }
+      }
+    } catch (e) {}
+
     let fileURL  = link?.trim() || "";
     let fileName = "";
 
@@ -75,11 +90,24 @@ export function useResources() {
           onProgress?.(currentProg);
         }, 500);
 
-        const { error } = await supabase.storage
-          .from("resources")
-          .upload(path, file, { upsert: false });
+        const uploadUrl = `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/resources/${path}`;
+        
+        const uploadRes = await fetch(uploadUrl, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "apikey": process.env.REACT_APP_SUPABASE_ANON_KEY,
+            "Content-Type": file.type || "application/octet-stream",
+            "Cache-Control": "3600"
+          },
+          body: file
+        });
 
-        if (error) throw error;
+        if (!uploadRes.ok) {
+          const errData = await uploadRes.json().catch(() => ({}));
+          throw new Error(errData.message || `Upload failed with status: ${uploadRes.status}`);
+        }
+
         clearInterval(fakeProgressInterval);
       } catch (err) {
         uploadError = err;
@@ -111,16 +139,25 @@ export function useResources() {
       comments:      [],
     };
 
-    // Insert with a hard 10-second timeout — will NEVER hang silently
-    const insertPromise = supabase.from("resources").insert(newResource).select();
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("Request timed out — your session may have expired. Please log out and log back in.")), 10000)
-    );
+    // Database insert using raw REST fetch to completely bypass SDK hangs
+    const insertRes = await fetch(`${process.env.REACT_APP_SUPABASE_URL}/rest/v1/resources`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Prefer": "return=representation",
+        "Authorization": `Bearer ${token}`,
+        "apikey": process.env.REACT_APP_SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify(newResource),
+    });
 
-    const { data, error: insertError } = await Promise.race([insertPromise, timeoutPromise]);
-    if (insertError) throw new Error(insertError.message);
+    if (!insertRes.ok) {
+      const errData = await insertRes.json().catch(() => ({}));
+      throw new Error(errData.message || `Sharing failed with status: ${insertRes.status}`);
+    }
 
-    const insertedItem = (data && data.length > 0)
+    const data = await insertRes.json().catch(() => null);
+    const insertedItem = (Array.isArray(data) && data.length > 0)
       ? data[0]
       : { ...newResource, id: Date.now().toString(), created_at: new Date().toISOString() };
 
