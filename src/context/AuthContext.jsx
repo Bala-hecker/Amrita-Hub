@@ -11,31 +11,22 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Timeout fallback to prevent infinite loading screens
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1500);
-
     let unsub = null;
-    try {
-      // Get initial session
-      supabase.auth.getSession().then(({ data: { session }, error }) => {
-        if (error) throw error;
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) fetchProfile(session.user.id);
-        else setLoading(false);
-      }).catch(err => {
-        console.error("Supabase getSession error:", err);
-        setLoading(false);
-      });
 
-      // Listen for auth state changes
-      const res = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+    // onAuthStateChange fires immediately with the current session
+    // (or after token refresh if expired). We wait for this before
+    // showing the app — this prevents the race condition where the
+    // user appears logged in but the token hasn't refreshed yet.
+    try {
+      const res = supabase.auth.onAuthStateChange(async (event, newSession) => {
         setSession(newSession);
         setUser(newSession?.user ?? null);
-        if (newSession?.user) await fetchProfile(newSession.user.id);
-        else { setProfile(null); setLoading(false); }
+        if (newSession?.user) {
+          await fetchProfile(newSession.user.id);
+        } else {
+          setProfile(null);
+          setLoading(false);
+        }
       });
       if (res?.data?.subscription) unsub = res.data.subscription;
     } catch (err) {
@@ -43,8 +34,11 @@ export function AuthProvider({ children }) {
       setLoading(false);
     }
 
+    // Safety fallback: if onAuthStateChange never fires within 5 seconds, unblock the UI
+    const fallback = setTimeout(() => setLoading(false), 5000);
+
     return () => {
-      clearTimeout(timer);
+      clearTimeout(fallback);
       if (unsub?.unsubscribe) unsub.unsubscribe();
     };
   }, []);
