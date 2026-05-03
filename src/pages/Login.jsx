@@ -38,7 +38,9 @@ export default function Login() {
     } catch (err) {
       setLoading(false);
       console.error("Supabase login error:", err);
-      setAuthError(err.message || "Login failed. Please try again.");
+      const msg = err.message || JSON.stringify(err) || "Login failed. Please try again.";
+      setAuthError(msg);
+      alert("Error: " + msg);
     }
   }
 
