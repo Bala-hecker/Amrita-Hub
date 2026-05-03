@@ -90,16 +90,24 @@ export function useResources() {
       comments:      [],
     };
 
-    const { data, error: insertError } = await supabase
+    // Optimistic update - Immediately close modal and show post to the user
+    const insertedItem = { ...newResource, id: Date.now().toString(), created_at: new Date().toISOString() };
+    setResources(prev => [insertedItem, ...prev]);
+
+    try {
+      localStorage.setItem("amrita_resources_cache", JSON.stringify([insertedItem, ...resources]));
+    } catch (e) {}
+
+    // Send the database insert asynchronously in the background
+    supabase
       .from("resources")
       .insert(newResource)
-      .select();
-
-    if (insertError) throw new Error(insertError.message);
-    const insertedItem = (data && data.length > 0) ? data[0] : { ...newResource, id: Date.now().toString() };
-
-    // Optimistic update
-    setResources(prev => [insertedItem, ...prev]);
+      .then(({ error }) => {
+        if (error) {
+          console.error("Delayed insert error:", error);
+          fetchResources();
+        }
+      });
   }
 
   // ── Toggle upvote ────────────────────────────────────────────────────────
