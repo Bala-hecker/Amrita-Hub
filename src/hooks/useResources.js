@@ -58,13 +58,31 @@ export function useResources() {
   async function addResource({ title, courseCode, type, link, description, file }, onProgress) {
     if (!user) throw new Error("Not authenticated");
 
-    // ALWAYS refresh the session first — this fixes the stale token hang
-    // that requires clearing cache every time.
-    const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-    if (refreshError || !refreshData?.session) {
+    // ALWAYS get a fresh token before any operation.
+    // We race refreshSession() against a 5s timeout because it can hang
+    // on iPhones/Safari when localStorage is locked.
+    let freshToken;
+    try {
+      const refreshPromise = supabase.auth.refreshSession();
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("REFRESH_TIMEOUT")), 5000)
+      );
+      const { data: refreshData, error: refreshError } = await Promise.race([refreshPromise, timeoutPromise]);
+      if (!refreshError && refreshData?.session?.access_token) {
+        freshToken = refreshData.session.access_token;
+      }
+    } catch (e) {
+      // refreshSession hung or failed — fall back to cached session token
+    }
+
+    // Fall back to the session already loaded in memory from AuthContext
+    if (!freshToken && session?.access_token) {
+      freshToken = session.access_token;
+    }
+
+    if (!freshToken) {
       throw new Error("Session expired. Please log out and log in again.");
     }
-    const freshToken = refreshData.session.access_token;
 
     let fileURL  = link?.trim() || "";
     let fileName = "";
