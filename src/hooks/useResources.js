@@ -36,7 +36,23 @@ export function useResources() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetchResources(); }, [fetchResources]);
+  useEffect(() => { 
+    fetchResources(); 
+    
+    // Auto-refresh when the user switches back to this tab
+    const handleFocus = () => {
+      if (document.visibilityState === 'visible') {
+        fetchResources();
+      }
+    };
+    document.addEventListener("visibilitychange", handleFocus);
+    window.addEventListener("focus", handleFocus);
+    
+    return () => {
+      document.removeEventListener("visibilitychange", handleFocus);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [fetchResources]);
 
   // ── Add resource (file upload OR link) ──────────────────────────────────
   async function addResource({ title, courseCode, type, link, description, file }, onProgress) {
