@@ -26,17 +26,10 @@ export default function AddResourceModal({ onClose, onSubmit }) {
     if (!useFile && !form.link.trim())         return setError("Please paste a link or upload a file.");
     if (useFile  && !file)                     return setError("Please select a file to upload.");
     setError(""); setLoading(true); setProgress(0);
-    const timer = setTimeout(() => {
-      setLoading(false);
-      onClose();
-    }, 2500);
-
     try {
       await onSubmit({ ...form, file: useFile ? file : null }, setProgress);
-      clearTimeout(timer);
       onClose();
     } catch (err) {
-      clearTimeout(timer);
       console.error(err);
       window.alert("Error: " + (err.message || "Something went wrong"));
       setError(err.message || "Something went wrong.");
