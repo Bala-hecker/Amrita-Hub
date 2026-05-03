@@ -8,15 +8,11 @@ if (supabaseUrl === "missing" || supabaseKey === "missing") {
   console.error("CRITICAL ERROR: Supabase URL or Key is missing from Environment Variables!");
 }
 
-// We will only create the client if the URL is valid, to prevent white-screen crashes
-let supabaseInstance = null;
-try {
-  if (supabaseUrl !== "missing" && supabaseKey !== "missing") {
-    supabaseInstance = createClient(supabaseUrl, supabaseKey);
-  }
-} catch (error) {
-  console.error("CRITICAL ERROR: Failed to initialize Supabase client.", error);
-  // Do NOT clear localStorage here - it would wipe the auth session token!
-}
-
-export const supabase = supabaseInstance;
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    autoRefreshToken: true,      // automatically refresh the token before it expires
+    persistSession: true,         // keep the session in localStorage
+    detectSessionInUrl: true,     // pick up the token from confirmation/magic links in the URL
+    storageKey: "amritahub-auth", // use a unique storage key so nothing else can wipe it
+  },
+});
