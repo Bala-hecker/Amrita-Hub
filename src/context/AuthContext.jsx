@@ -72,11 +72,14 @@ export function AuthProvider({ children }) {
   }
 
   async function login(email, password) {
-    const res = await fetch(`${process.env.REACT_APP_SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    const url = process.env.REACT_APP_SUPABASE_URL || "https://bkugqqsjnrcrxgomjvda.supabase.co";
+    const key = process.env.REACT_APP_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrdWdxcXNqbnJjcnhnb21qdmRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2OTMwMjYsImV4cCI6MjA5MzI2OTAyNn0.RRr0wnr6qCa2PdlqwezYWvx7eopldxP46-x6DCJypQU";
+
+    const res = await fetch(`${url}/auth/v1/token?grant_type=password`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "apikey": process.env.REACT_APP_SUPABASE_ANON_KEY,
+        "apikey": key,
       },
       body: JSON.stringify({ email, password }),
     });
