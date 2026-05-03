@@ -70,6 +70,10 @@ export default function Home() {
 
   return (
     <div className={s.page}>
+      {/* CACHE BUSTING BANNER */}
+      <div style={{ background: "red", color: "white", padding: "10px", textAlign: "center", fontWeight: "bold", zIndex: 9999 }}>
+        VERSION 5: REAL UPLOAD FIX IS ACTIVE! IF YOU DONT SEE THIS BANNER, YOU ARE USING AN OLD CACHED SITE!
+      </div>
       {/* Hero */}
       <div className={s.hero}>
         <div className={s.heroLeft}>
