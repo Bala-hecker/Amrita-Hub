@@ -56,13 +56,6 @@ export function useResources() {
   async function addResource({ title, courseCode, type, link, description, file }, onProgress) {
     if (!user) throw new Error("Not authenticated");
 
-    // Ensure we have a valid session before doing anything.
-    // getSession() automatically refreshes the token if it's expired.
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (!sessionData?.session) {
-      throw new Error("Your session has expired. Please log out and log back in.");
-    }
-
     let fileURL  = link?.trim() || "";
     let fileName = "";
 
@@ -118,11 +111,13 @@ export function useResources() {
       comments:      [],
     };
 
-    const { data, error: insertError } = await supabase
-      .from("resources")
-      .insert(newResource)
-      .select();
+    // Insert with a hard 10-second timeout — will NEVER hang silently
+    const insertPromise = supabase.from("resources").insert(newResource).select();
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Request timed out — your session may have expired. Please log out and log back in.")), 10000)
+    );
 
+    const { data, error: insertError } = await Promise.race([insertPromise, timeoutPromise]);
     if (insertError) throw new Error(insertError.message);
 
     const insertedItem = (data && data.length > 0)
