@@ -58,6 +58,14 @@ export function useResources() {
   async function addResource({ title, courseCode, type, link, description, file }, onProgress) {
     if (!user) throw new Error("Not authenticated");
 
+    // ALWAYS refresh the session first — this fixes the stale token hang
+    // that requires clearing cache every time.
+    const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+    if (refreshError || !refreshData?.session) {
+      throw new Error("Session expired. Please log out and log in again.");
+    }
+    const freshToken = refreshData.session.access_token;
+
     let fileURL  = link?.trim() || "";
     let fileName = "";
 
@@ -146,16 +154,31 @@ export function useResources() {
       comments:      [],
     };
 
-    // Send the database insert and wait for confirmation before updating UI
-    const { data, error: insertError } = await supabase
-      .from("resources")
-      .insert(newResource)
-      .select();
+    // Send the database insert using raw REST with the freshly-refreshed token
+    const insertRes = await fetch(
+      `${process.env.REACT_APP_SUPABASE_URL}/rest/v1/resources`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Prefer": "return=representation",
+          "Authorization": `Bearer ${freshToken}`,
+          "apikey": process.env.REACT_APP_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify(newResource),
+      }
+    );
 
-    if (insertError) throw new Error(insertError.message);
+    if (!insertRes.ok) {
+      const errData = await insertRes.json().catch(() => ({}));
+      throw new Error(errData.message || `Database insert failed: HTTP ${insertRes.status}`);
+    }
 
-    const insertedItem = (data && data.length > 0) ? data[0] : { ...newResource, id: Date.now().toString(), created_at: new Date().toISOString() };
-    
+    const data = await insertRes.json().catch(() => null);
+    const insertedItem = (Array.isArray(data) && data.length > 0)
+      ? data[0]
+      : { ...newResource, id: Date.now().toString(), created_at: new Date().toISOString() };
+
     // Update UI only after successful database insert
     setResources(prev => [insertedItem, ...prev]);
 
