@@ -105,6 +105,7 @@ export function useResources() {
       .then(({ error }) => {
         if (error) {
           console.error("Delayed insert error:", error);
+          window.alert("Background Error: " + error.message + "\nDetails: " + JSON.stringify(error));
           fetchResources();
         }
       });
