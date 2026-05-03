@@ -18,21 +18,27 @@ export function useResources() {
 
   const fetchResources = useCallback(async () => {
     setError(null);
-    const { data, error: err } = await supabase
-      .from("resources")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (err) {
-      setError("Could not load resources. Check your Supabase config.");
-      console.error(err);
-    } else {
+    try {
+      const res = await fetch(`${process.env.REACT_APP_SUPABASE_URL}/rest/v1/resources?select=*&order=created_at.desc`, {
+        headers: {
+          "apikey": process.env.REACT_APP_SUPABASE_ANON_KEY,
+          "Authorization": `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`
+        }
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to load resources: HTTP ${res.status}`);
+      }
+      const data = await res.json();
       setResources(data || []);
       try {
         localStorage.setItem("amrita_resources_cache", JSON.stringify(data || []));
       } catch (e) {}
+    } catch (err) {
+      setError("Could not load resources. Check your connection.");
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
