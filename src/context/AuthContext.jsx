@@ -6,6 +6,7 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user,    setUser]    = useState(null);
+  const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -20,6 +21,7 @@ export function AuthProvider({ children }) {
       // Get initial session
       supabase.auth.getSession().then(({ data: { session }, error }) => {
         if (error) throw error;
+        setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) fetchProfile(session.user.id);
         else setLoading(false);
@@ -29,9 +31,10 @@ export function AuthProvider({ children }) {
       });
 
       // Listen for auth state changes
-      const res = supabase.auth.onAuthStateChange(async (_event, session) => {
-        setUser(session?.user ?? null);
-        if (session?.user) await fetchProfile(session.user.id);
+      const res = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
+        if (newSession?.user) await fetchProfile(newSession.user.id);
         else { setProfile(null); setLoading(false); }
       });
       if (res?.data?.subscription) unsub = res.data.subscription;
@@ -96,12 +99,14 @@ export function AuthProvider({ children }) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
     if (data?.user) {
+      setSession(data.session);
       setUser(data.user);
       fetchProfile(data.user.id); // Trigger in the background
     }
   }
 
   async function logout() {
+    setSession(null);
     setUser(null);
     setProfile(null);
     try {
@@ -114,7 +119,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, register, login, logout }}>
+    <AuthContext.Provider value={{ session, user, profile, loading, register, login, logout }}>
       {loading ? (
         <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", fontFamily: "sans-serif", color: "#333" }}>
           <h2>Loading AmritaHub...</h2>

@@ -4,7 +4,7 @@ import { supabase } from "../supabase";
 import { useAuth } from "../context/AuthContext";
 
 export function useResources() {
-  const { user, profile } = useAuth();
+  const { user, profile, session } = useAuth();
   // Load from localStorage optimistically for permanent instant refresh
   const [resources, setResources] = useState(() => {
     try {
@@ -78,10 +78,9 @@ export function useResources() {
           onProgress?.(currentProg);
         }, 500);
 
-        // Wrap the entire process in a timeout in case Supabase localStorage lock is frozen
+        // Wrap the entire process in a timeout in case the connection is completely dead
         const uploadTask = async () => {
-          const { data: sessionData } = await supabase.auth.getSession();
-          const token = sessionData?.session?.access_token || process.env.REACT_APP_SUPABASE_ANON_KEY;
+          const token = session?.access_token || process.env.REACT_APP_SUPABASE_ANON_KEY;
 
           const uploadUrl = `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/resources/${path}`;
           
