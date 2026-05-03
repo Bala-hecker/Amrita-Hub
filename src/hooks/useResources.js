@@ -68,9 +68,16 @@ export function useResources() {
 
       let uploadError = null;
       try {
-        const { error } = await supabase.storage
+        // Race the upload against a 20-second timeout to prevent infinite hangs
+        const uploadPromise = supabase.storage
           .from("resources")
           .upload(path, file, { upsert: false });
+          
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Upload timed out after 20 seconds. Please check your internet connection or try a smaller file.")), 20000)
+        );
+
+        const { error } = await Promise.race([uploadPromise, timeoutPromise]);
         uploadError = error;
       } catch (err) {
         uploadError = err;
