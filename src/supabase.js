@@ -15,12 +15,8 @@ try {
     supabaseInstance = createClient(supabaseUrl, supabaseKey);
   }
 } catch (error) {
-  console.error("CRITICAL ERROR: Failed to initialize Supabase client. LocalStorage might be corrupted.", error);
-  // Optional: clear local storage if Supabase crashes on init
-  if (typeof window !== 'undefined') {
-    localStorage.clear();
-    window.location.reload();
-  }
+  console.error("CRITICAL ERROR: Failed to initialize Supabase client.", error);
+  // Do NOT clear localStorage here - it would wipe the auth session token!
 }
 
 export const supabase = supabaseInstance;

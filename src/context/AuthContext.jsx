@@ -110,10 +110,6 @@ export function AuthProvider({ children }) {
     setUser(null);
     setProfile(null);
     try {
-      localStorage.clear();
-      sessionStorage.clear();
-    } catch (e) {}
-    try {
       await supabase.auth.signOut();
     } catch (e) {}
   }
