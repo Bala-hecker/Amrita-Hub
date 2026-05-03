@@ -78,21 +78,29 @@ export function useResources() {
           onProgress?.(currentProg);
         }, 500);
 
-        // Race the upload against a 20-second timeout to prevent infinite hangs
-        const uploadPromise = supabase.storage
-          .from("resources")
-          .upload(path, file, { 
-            upsert: false,
-            cacheControl: '3600',
-            contentType: file.type || 'application/octet-stream'
-          });
-          
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("Upload timed out after 20 seconds. Please check your internet connection or try a smaller file.")), 20000)
-        );
+        // We use native fetch to completely bypass any supabase-js bugs!
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token || process.env.REACT_APP_SUPABASE_ANON_KEY;
 
-        const { error } = await Promise.race([uploadPromise, timeoutPromise]);
-        uploadError = error;
+        const uploadUrl = `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/resources/${path}`;
+        
+        const res = await fetch(uploadUrl, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "apikey": process.env.REACT_APP_SUPABASE_ANON_KEY,
+            "Content-Type": file.type || "application/octet-stream",
+            "Cache-Control": "3600"
+          },
+          body: file
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || `HTTP ${res.status} ${res.statusText}`);
+        }
+        
+        clearInterval(fakeProgressInterval);
       } catch (err) {
         uploadError = err;
       } finally {
