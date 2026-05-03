@@ -90,25 +90,22 @@ export function useResources() {
       comments:      [],
     };
 
-    // Optimistic update - Immediately close modal and show post to the user
-    const insertedItem = { ...newResource, id: Date.now().toString(), created_at: new Date().toISOString() };
+    // Send the database insert and wait for confirmation before updating UI
+    const { data, error: insertError } = await supabase
+      .from("resources")
+      .insert(newResource)
+      .select();
+
+    if (insertError) throw new Error(insertError.message);
+
+    const insertedItem = (data && data.length > 0) ? data[0] : { ...newResource, id: Date.now().toString(), created_at: new Date().toISOString() };
+    
+    // Update UI only after successful database insert
     setResources(prev => [insertedItem, ...prev]);
 
     try {
       localStorage.setItem("amrita_resources_cache", JSON.stringify([insertedItem, ...resources]));
     } catch (e) {}
-
-    // Send the database insert and wait for confirmation before closing modal
-    const { error: insertError } = await supabase
-      .from("resources")
-      .insert(newResource)
-      .select();
-
-    if (insertError) {
-      // Revert optimistic update on failure
-      setResources(prev => prev.filter(r => r.id !== insertedItem.id));
-      throw new Error(insertError.message);
-    }
   }
 
   // ── Toggle upvote ────────────────────────────────────────────────────────
