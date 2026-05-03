@@ -74,39 +74,42 @@ export function useResources() {
         let currentProg = 10;
         fakeProgressInterval = setInterval(() => {
           currentProg += Math.floor(Math.random() * 5) + 2;
-          if (currentProg > 75) currentProg = 75; // cap at 75% until finished
+          if (currentProg > 75) currentProg = 75;
           onProgress?.(currentProg);
         }, 500);
 
-        // Wrap the entire process in a timeout in case the connection is completely dead
-        const uploadTask = async () => {
-          const token = session?.access_token || process.env.REACT_APP_SUPABASE_ANON_KEY;
+        // ALWAYS force-refresh the session token before uploading.
+        // This fixes the "need to clear cache every time" bug caused by stale tokens.
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError || !refreshData?.session) {
+          throw new Error("Your login session expired. Please log out and log in again.");
+        }
+        const token = refreshData.session.access_token;
 
-          const uploadUrl = `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/resources/${path}`;
-          
-          const res = await fetch(uploadUrl, {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${token}`,
-              "apikey": process.env.REACT_APP_SUPABASE_ANON_KEY,
-              "Content-Type": file.type || "application/octet-stream",
-              "Cache-Control": "3600"
-            },
-            body: file
-          });
-
-          if (!res.ok) {
-            const errData = await res.json().catch(() => ({}));
-            throw new Error(errData.message || `HTTP ${res.status} ${res.statusText}`);
-          }
-        };
-
+        const uploadUrl = `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/resources/${path}`;
+        
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("Browser connection frozen. Please restart your browser.")), 20000)
+          setTimeout(() => reject(new Error("Upload timed out. Check your internet connection.")), 25000)
         );
 
-        await Promise.race([uploadTask(), timeoutPromise]);
-        
+        const fetchPromise = fetch(uploadUrl, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "apikey": process.env.REACT_APP_SUPABASE_ANON_KEY,
+            "Content-Type": file.type || "application/octet-stream",
+            "Cache-Control": "3600"
+          },
+          body: file
+        }).then(async res => {
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.message || `Upload failed: HTTP ${res.status}`);
+          }
+          return res;
+        });
+
+        await Promise.race([fetchPromise, timeoutPromise]);
         clearInterval(fakeProgressInterval);
       } catch (err) {
         uploadError = err;
@@ -115,8 +118,7 @@ export function useResources() {
       }
 
       if (uploadError) {
-        console.error("Direct storage upload error:", uploadError);
-        throw new Error("File upload failed: " + (uploadError.message || uploadError));
+        throw new Error(uploadError.message || "File upload failed");
       }
       onProgress?.(80);
 
