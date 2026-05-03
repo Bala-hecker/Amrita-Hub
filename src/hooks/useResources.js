@@ -98,22 +98,17 @@ export function useResources() {
       localStorage.setItem("amrita_resources_cache", JSON.stringify([insertedItem, ...resources]));
     } catch (e) {}
 
-    // Send the database insert asynchronously in the background
-    supabase
+    // Send the database insert and wait for confirmation before closing modal
+    const { error: insertError } = await supabase
       .from("resources")
       .insert(newResource)
-      .then(({ error }) => {
-        if (error) {
-          console.error("Delayed insert error:", error);
-          window.alert("Background Error: " + error.message + "\nDetails: " + JSON.stringify(error));
-          fetchResources();
-        }
-      })
-      .catch(err => {
-        console.error("Delayed insert exception:", err);
-        window.alert("Background Exception: " + (err.message || err));
-        fetchResources();
-      });
+      .select();
+
+    if (insertError) {
+      // Revert optimistic update on failure
+      setResources(prev => prev.filter(r => r.id !== insertedItem.id));
+      throw new Error(insertError.message);
+    }
   }
 
   // ── Toggle upvote ────────────────────────────────────────────────────────
