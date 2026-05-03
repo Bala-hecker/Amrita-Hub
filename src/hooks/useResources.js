@@ -263,13 +263,35 @@ export function useResources() {
 
     setResources(prev => prev.filter(x => x.id !== resourceId));
 
-    const { error } = await supabase
-      .from("resources")
-      .delete()
-      .eq("id", resourceId);
+    let token = process.env.REACT_APP_SUPABASE_ANON_KEY;
+    try {
+      const stored = localStorage.getItem("sb-bkugqqsjnrcrxgomjvda-auth-token") ||
+                     localStorage.getItem("amritahub-auth") ||
+                     localStorage.getItem("supabase.auth.token");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.access_token) {
+          token = parsed.access_token;
+        } else if (parsed?.currentSession?.access_token) {
+          token = parsed.currentSession.access_token;
+        }
+      }
+    } catch (e) {}
 
-    if (error) {
-      console.error("Failed to delete resource:", error);
+    try {
+      const deleteRes = await fetch(`${process.env.REACT_APP_SUPABASE_URL}/rest/v1/resources?id=eq.${resourceId}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "apikey": process.env.REACT_APP_SUPABASE_ANON_KEY,
+        }
+      });
+
+      if (!deleteRes.ok) {
+        throw new Error(`Direct delete failed with status: ${deleteRes.status}`);
+      }
+    } catch (err) {
+      console.error("Failed to delete resource:", err);
       fetchResources();
     }
   }
