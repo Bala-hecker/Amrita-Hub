@@ -1,7 +1,6 @@
 // src/pages/Curriculum.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { SEMESTERS, ELECTIVES } from "../data/curriculum";
 import { useResources } from "../hooks/useResources";
 import { useNavigate } from "react-router-dom";
 import s from "./Curriculum.module.css";
@@ -15,15 +14,20 @@ const CAT = {
 };
 
 export default function Curriculum() {
-  const { resources }    = useResources();
+  const { resources, semesters, electives } = useResources();
   const navigate          = useNavigate();
   const [openTrack, setOpenTrack] = useState(null);
+
+  useEffect(() => {
+    document.title = "B.Tech CSE Syllabus & Curriculum | Amrita Hub - B.Tech CSE Portal";
+  }, []);
 
   const countByCode = {};
   resources.forEach(r => { countByCode[r.course_code] = (countByCode[r.course_code]||0)+1; });
 
-  const totalCredits = Object.values(SEMESTERS)
-    .flat().reduce((a,c) => a+c.credits, 0);
+  const totalCredits = semesters
+    ? Object.values(semesters).flat().reduce((a,c) => a+c.credits, 0)
+    : 0;
 
   return (
     <div className={s.page}>
@@ -35,7 +39,7 @@ export default function Curriculum() {
         </div>
 
         {/* Semester tables */}
-        {Object.entries(SEMESTERS).map(([sem, courses]) => {
+        {Object.entries(semesters || {}).map(([sem, courses]) => {
           const semCr = courses.reduce((a,c) => a+c.credits, 0);
           return (
             <div key={sem} className={s.semCard}>
@@ -85,7 +89,7 @@ export default function Curriculum() {
           <h2 className={s.elecHeading}>Professional Electives</h2>
           <p className={s.elecSub}>Choose from specialisation tracks in Sem V–VII</p>
           <div className={s.elecGrid}>
-            {Object.entries(ELECTIVES).map(([track, courses]) => (
+            {Object.entries(electives || {}).map(([track, courses]) => (
               <div key={track} className={s.elecCard}>
                 <button
                   className={s.elecBtn}

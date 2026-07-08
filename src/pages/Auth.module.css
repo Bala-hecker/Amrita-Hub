@@ -20,7 +20,7 @@
 }
 
 .card {
-  background: white; border-radius: 22px;
+  background: var(--white); border-radius: 22px;
   padding: 40px 36px; width: 100%; max-width: 440px;
   box-shadow: 0 32px 80px rgba(0,0,0,.28);
   position: relative; animation: slideUp .45s ease;

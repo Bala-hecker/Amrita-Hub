@@ -1,8 +1,12 @@
 /* src/components/Navbar.module.css */
 .nav {
-  background: var(--cr);
+  background: var(--nav-bg);
   position: sticky; top: 0; z-index: 200;
   box-shadow: 0 2px 16px rgba(0,0,0,.2);
+  transition: background 0.2s, border-color 0.2s;
+}
+:global(body.dark) .nav {
+  border-bottom: 1px solid var(--cr-d);
 }
 .inner {
   max-width: 1360px; margin: 0 auto; padding: 0 20px;
@@ -60,9 +64,10 @@
 }
 .drawer {
   position: fixed; top: var(--nav-h); left: 0; right: 0;
-  background: white; z-index: 195; padding: 0 0 16px;
+  background: var(--white); z-index: 195; padding: 0 0 16px;
   box-shadow: 0 8px 32px rgba(0,0,0,.18);
   animation: slideDown .22s ease;
+  border-bottom: 1px solid var(--bdr);
 }
 @keyframes slideDown { from { opacity:0; transform:translateY(-8px) } to { opacity:1; transform:translateY(0) } }
 

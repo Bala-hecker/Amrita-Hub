@@ -10,6 +10,11 @@ import Saved               from "./pages/Saved";
 import Trending            from "./pages/Trending";
 import Curriculum          from "./pages/Curriculum";
 import Profile             from "./pages/Profile";
+import Requests            from "./pages/Requests";
+import Search              from "./pages/Search";
+import NotFound            from "./pages/NotFound";
+import ForgotPassword      from "./pages/ForgotPassword";
+import ResetPassword       from "./pages/ResetPassword";
 import "./styles/global.css";
 
 function Layout() {
@@ -38,16 +43,23 @@ export default function App() {
         <Routes>
           <Route path="/login"    element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password"  element={<ResetPassword />} />
 
-          <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+          <Route element={<Layout />}>
             <Route path="/"           element={<Home />} />
-            <Route path="/saved"      element={<Saved />} />
+            <Route path="/search"     element={<Search />} />
             <Route path="/trending"   element={<Trending />} />
             <Route path="/curriculum" element={<Curriculum />} />
+            <Route path="/requests"   element={<Requests />} />
+          </Route>
+
+          <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+            <Route path="/saved"      element={<Saved />} />
             <Route path="/profile"    element={<Profile />} />
           </Route>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

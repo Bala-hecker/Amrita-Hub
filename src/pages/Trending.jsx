@@ -1,11 +1,16 @@
 // src/pages/Trending.jsx
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useResources } from "../hooks/useResources";
 import ResourceCard from "../components/ResourceCard";
 import s from "./SimplePage.module.css";
 
 export default function Trending() {
-  const { resources, loading, toggleVote, toggleSave } = useResources();
+  const { resources, loading, toggleVote, toggleSave, reportResource } = useResources();
+  
+  useEffect(() => {
+    document.title = "Top Voted Study Materials | Amrita Hub - B.Tech CSE Portal";
+  }, []);
+
   const sorted = useMemo(() => [...resources].sort((a,b) => b.votes - a.votes), [resources]);
 
   const MEDALS = ["🥇","🥈","🥉"];
@@ -31,7 +36,7 @@ export default function Trending() {
               <div key={r.id} className={s.ranked}>
                 {i < 3 && <div className={s.medal}>{MEDALS[i]}</div>}
                 {i >= 3 && <div className={s.rankNum}>#{i+1}</div>}
-                <ResourceCard resource={r} onVote={toggleVote} onSave={toggleSave} />
+                <ResourceCard resource={r} onVote={toggleVote} onSave={toggleSave} onReport={reportResource} />
               </div>
             ))}
           </div>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { X, Send } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useResources } from "../hooks/useResources";
@@ -6,6 +7,7 @@ import s from "./CommentsModal.module.css";
 
 export default function CommentsModal({ resource, onClose }) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { addComment } = useResources();
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -61,7 +63,7 @@ export default function CommentsModal({ resource, onClose }) {
           )}
         </div>
 
-        {user && (
+        {user ? (
           <form className={s.inputForm} onSubmit={handleSubmit}>
             <input
               type="text"
@@ -80,6 +82,10 @@ export default function CommentsModal({ resource, onClose }) {
               <Send size={18} />
             </button>
           </form>
+        ) : (
+          <div className={s.loginPrompt} style={{ padding: "12px 15px", borderTop: "1px solid var(--border)", textAlign: "center", fontSize: "0.9rem", color: "var(--text-muted)" }}>
+            Please <span style={{ color: "var(--primary)", cursor: "pointer", fontWeight: 600, textDecoration: "underline" }} onClick={() => navigate("/login")}>log in</span> to write a comment.
+          </div>
         )}
       </div>
     </div>

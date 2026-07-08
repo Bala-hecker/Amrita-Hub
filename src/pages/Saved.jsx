@@ -1,5 +1,5 @@
 // src/pages/Saved.jsx
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useResources } from "../hooks/useResources";
 import { useAuth } from "../context/AuthContext";
 import ResourceCard from "../components/ResourceCard";
@@ -7,7 +7,12 @@ import s from "./SimplePage.module.css";
 
 export default function Saved() {
   const { user } = useAuth();
-  const { resources, loading, toggleVote, toggleSave } = useResources();
+  const { resources, loading, toggleVote, toggleSave, reportResource } = useResources();
+
+  useEffect(() => {
+    document.title = "Saved Bookmarks & Reading List | Amrita Hub - B.Tech CSE Portal";
+  }, []);
+
   const saved = useMemo(() => resources.filter(r => r.saved_by?.includes(user?.id)), [resources, user]);
 
   return (
@@ -30,7 +35,7 @@ export default function Saved() {
             <p className={s.count}>{saved.length} saved resource{saved.length !== 1 ? "s" : ""}</p>
             <div className={s.grid}>
               {saved.map(r => (
-                <ResourceCard key={r.id} resource={r} onVote={toggleVote} onSave={toggleSave} />
+                <ResourceCard key={r.id} resource={r} onVote={toggleVote} onSave={toggleSave} onReport={reportResource} />
               ))}
             </div>
           </>

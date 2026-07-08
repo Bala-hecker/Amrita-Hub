@@ -1,16 +1,71 @@
-// src/components/AddResourceModal.jsx
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { X, Upload, Link as LinkIcon, Loader, CheckCircle } from "lucide-react";
-import { ALL_COURSES } from "../data/curriculum";
+import { useResources } from "../hooks/useResources";
 import s from "./AddResourceModal.module.css";
 
 const TYPES = ["Notes", "PDF", "Video", "Article", "Practice"];
 
-export default function AddResourceModal({ onClose, onSubmit }) {
+const YEARS = [
+  { id: "1", label: "1st Year (Semester 1 & 2)", sems: ["Semester I", "Semester II"], isElective: false },
+  { id: "2", label: "2nd Year (Semester 3 & 4)", sems: ["Semester III", "Semester IV"], isElective: false },
+  { id: "3", label: "3rd Year (Semester 5 & 6)", sems: ["Semester V", "Semester VI"], isElective: false },
+  { id: "4", label: "4th Year (Semester 7 & 8)", sems: ["Semester VII", "Semester VIII"], isElective: false },
+  { id: "E", label: "Professional & General Electives", sems: [], isElective: true },
+];
+
+export default function AddResourceModal({ onClose, onSubmit, prefillCourse, prefillTitle }) {
+  const { allCourses: ALL_COURSES = [] } = useResources();
+
   const [form, setForm] = useState({
-    title: "", courseCode: ALL_COURSES[0]?.code || "",
-    type: "Notes", link: "", description: "",
+    title: prefillTitle || "",
+    courseCode: prefillCourse || "",
+    type: "Notes", link: "", description: "", tags: [],
   });
+
+  const initialYear = useMemo(() => {
+    if (prefillCourse) {
+      const course = ALL_COURSES.find(c => c.code === prefillCourse);
+      if (course) {
+        if (course.isElective) return "E";
+        if (["Semester I", "Semester II"].includes(course.semester)) return "1";
+        if (["Semester III", "Semester IV"].includes(course.semester)) return "2";
+        if (["Semester V", "Semester VI"].includes(course.semester)) return "3";
+        if (["Semester VII", "Semester VIII"].includes(course.semester)) return "4";
+      }
+    }
+    return "1"; // Default to 1st Year
+  }, [prefillCourse, ALL_COURSES]);
+
+  const [selectedYear, setSelectedYear] = useState(initialYear);
+
+  const filteredCourses = useMemo(() => {
+    const yearObj = YEARS.find(y => y.id === selectedYear);
+    if (!yearObj) return [];
+    if (yearObj.isElective) {
+      return ALL_COURSES.filter(c => c.isElective);
+    }
+    return ALL_COURSES.filter(c => !c.isElective && yearObj.sems.includes(c.semester));
+  }, [selectedYear, ALL_COURSES]);
+
+  const getCourseLabel = (code) => {
+    const course = ALL_COURSES.find(c => c.code === code);
+    return course ? `${course.code} – ${course.title}` : "";
+  };
+
+  const [courseSearch, setCourseSearch] = useState(() => getCourseLabel(form.courseCode));
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const suggestions = useMemo(() => {
+    const q = courseSearch.toLowerCase().trim();
+    const currentLabel = getCourseLabel(form.courseCode).toLowerCase();
+    if (q === currentLabel || !q) return filteredCourses;
+
+    return filteredCourses.filter(c =>
+      c.code.toLowerCase().includes(q) ||
+      c.title.toLowerCase().includes(q)
+    );
+  }, [courseSearch, filteredCourses, form.courseCode]);
+
   const [file,     setFile]     = useState(null);
   const [useFile,  setUseFile]  = useState(false);
   const [progress, setProgress] = useState(0);
@@ -20,6 +75,19 @@ export default function AddResourceModal({ onClose, onSubmit }) {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
+  useEffect(() => {
+    if (filteredCourses.length > 0) {
+      const isCurrentCodeValid = filteredCourses.some(c => c.code === form.courseCode);
+      if (!isCurrentCodeValid) {
+        const nextCode = filteredCourses[0].code;
+        set("courseCode", nextCode);
+        setCourseSearch(getCourseLabel(nextCode));
+      } else {
+        setCourseSearch(getCourseLabel(form.courseCode));
+      }
+    }
+  }, [selectedYear, filteredCourses]);
+
   async function handleSubmit(e) {
     e.preventDefault();
     if (!form.title.trim())                    return setError("Please enter a title.");
@@ -27,7 +95,13 @@ export default function AddResourceModal({ onClose, onSubmit }) {
     if (useFile  && !file)                     return setError("Please select a file to upload.");
     setError(""); setLoading(true); setProgress(0);
     try {
-      await onSubmit({ ...form, file: useFile ? file : null }, setProgress);
+      const result = await onSubmit({ ...form, file: useFile ? file : null }, setProgress);
+      if (result?.spamWarning) {
+        setError("⚠️ Your resource was flagged for review and is pending admin approval. It won't appear publicly until reviewed.");
+        setLoading(false);
+        // Don't close — let user see the warning
+        return;
+      }
       onClose();
     } catch (err) {
       console.error(err);
@@ -59,14 +133,77 @@ export default function AddResourceModal({ onClose, onSubmit }) {
               placeholder="e.g. DBMS Normalization 1NF to BCNF" />
           </div>
 
-          {/* Course */}
+          {/* Year */}
           <div className="field">
-            <label>Course *</label>
-            <select value={form.courseCode} onChange={e => set("courseCode", e.target.value)}>
-              {ALL_COURSES.map(c => (
-                <option key={c.code} value={c.code}>{c.code} – {c.title}</option>
+            <label>Academic Year / Category *</label>
+            <select value={selectedYear} onChange={e => setSelectedYear(e.target.value)}>
+              {YEARS.map(y => (
+                <option key={y.id} value={y.id}>{y.label}</option>
               ))}
             </select>
+          </div>
+
+          {/* Course Search */}
+          <div className="field" style={{ position: "relative" }}>
+            <label>Course *</label>
+            <input
+              type="text"
+              value={courseSearch}
+              onChange={e => {
+                setCourseSearch(e.target.value);
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+              placeholder="Type course code or title..."
+            />
+            {showSuggestions && (
+              <ul style={{
+                position: "absolute",
+                top: "calc(100% + 4px)",
+                left: 0,
+                right: 0,
+                background: "var(--white)",
+                border: "1.5px solid var(--bdr)",
+                borderRadius: "10px",
+                maxHeight: "200px",
+                overflowY: "auto",
+                zIndex: 10,
+                listStyle: "none",
+                margin: 0,
+                padding: "4px 0",
+                boxShadow: "var(--sh-lg)"
+              }}>
+                {suggestions.length === 0 ? (
+                  <li style={{ padding: "8px 12px", fontSize: "0.85rem", color: "var(--muted)" }}>
+                    No matching courses found
+                  </li>
+                ) : (
+                  suggestions.map(c => (
+                    <li
+                      key={c.code}
+                      onClick={() => {
+                        set("courseCode", c.code);
+                        setCourseSearch(`${c.code} – ${c.title}`);
+                        setShowSuggestions(false);
+                      }}
+                      style={{
+                        padding: "8px 12px",
+                        fontSize: "0.85rem",
+                        color: "var(--txt)",
+                        cursor: "pointer",
+                        borderBottom: "1px solid rgba(0,0,0,0.02)",
+                        transition: "background 0.15s"
+                      }}
+                      onMouseEnter={e => e.target.style.background = "var(--bg)"}
+                      onMouseLeave={e => e.target.style.background = "none"}
+                    >
+                      <strong>{c.code}</strong> – {c.title}
+                    </li>
+                  ))
+                )}
+              </ul>
+            )}
           </div>
 
           {/* Type pills */}
@@ -131,6 +268,114 @@ export default function AddResourceModal({ onClose, onSubmit }) {
                 placeholder="https://drive.google.com/… or YouTube link" />
             </div>
           )}
+
+          {/* Tags */}
+          <div className="field">
+            <label>Tags / Exam Relevance (optional)</label>
+            <div className={s.tagPicker} style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "4px" }}>
+              {["Mid-Sem", "End-Sem", "PYQ", "Cheat Sheet", "Lab"].map(tag => {
+                const selected = form.tags?.includes(tag);
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: "20px",
+                      fontSize: "0.75rem",
+                      fontWeight: 600,
+                      border: "1.5px solid var(--bdr)",
+                      background: selected ? "var(--cr-l)" : "var(--white)",
+                      color: selected ? "var(--cr)" : "var(--txt)",
+                      borderColor: selected ? "var(--cr)" : "var(--bdr)",
+                      transition: "all 0.15s",
+                      cursor: "pointer"
+                    }}
+                    onClick={() => {
+                      const currentTags = form.tags || [];
+                      const nextTags = currentTags.includes(tag)
+                        ? currentTags.filter(t => t !== tag)
+                        : [...currentTags, tag];
+                      set("tags", nextTags);
+                    }}
+                  >
+                    #{tag}
+                  </button>
+                );
+              })}
+
+              {/* Custom tags added by user */}
+              {(form.tags || []).filter(tag => !["Mid-Sem", "End-Sem", "PYQ", "Cheat Sheet", "Lab"].includes(tag)).map(tag => (
+                <button
+                  key={tag}
+                  type="button"
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: "20px",
+                    fontSize: "0.75rem",
+                    fontWeight: 600,
+                    border: "1.5px solid var(--cr)",
+                    background: "var(--cr-l)",
+                    color: "var(--cr)",
+                    transition: "all 0.15s",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px"
+                  }}
+                  onClick={() => {
+                    set("tags", form.tags.filter(t => t !== tag));
+                  }}
+                >
+                  #{tag} <span style={{ fontWeight: 800 }}>×</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Custom Tag Input */}
+            <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+              <input
+                type="text"
+                placeholder="Or type custom tag..."
+                id="customTagInput"
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: "20px",
+                  fontSize: "0.8rem",
+                  border: "1.5px solid var(--bdr)",
+                  background: "var(--white)",
+                  color: "var(--txt)",
+                  outline: "none",
+                  flex: 1
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    const val = e.target.value.trim().replace(/#/g, "");
+                    if (val && !form.tags?.includes(val)) {
+                      set("tags", [...(form.tags || []), val]);
+                      e.target.value = "";
+                    }
+                  }
+                }}
+              />
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => {
+                  const input = document.getElementById("customTagInput");
+                  const val = input?.value.trim().replace(/#/g, "");
+                  if (val && !form.tags?.includes(val)) {
+                    set("tags", [...(form.tags || []), val]);
+                    input.value = "";
+                  }
+                }}
+                style={{ borderRadius: "20px" }}
+              >
+                Add
+              </button>
+            </div>
+          </div>
 
           {/* Description */}
           <div className="field">

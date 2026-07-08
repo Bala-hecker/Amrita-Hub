@@ -6,8 +6,169 @@
   <meta name="theme-color" content="#C0003C" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="description" content="AmritaHub – Collaborative study resource platform for Amrita CSE students" />
-  <title>AmritaHub – Amrita CSE</title>
+  
+  <!-- Basic SEO Metadata -->
+  <meta name="description" content="Amrita Hub – The premier study resource and academic portal for Amrita School of Engineering (B.Tech CSE). Access course notes, past years question papers (PYQs), lab practical guides, and class materials shared by peers." />
+  <meta name="keywords" content="Amrita Hub, ASE CSE, Amrita School of Engineering, Amrita Study Materials, Amrita B.Tech CSE, Amrita PYQs, Amrita University notes, study guides, exam papers, syllabus" />
+  <meta name="author" content="Amrita Hub Contributors" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://amritahub.vercel.app" />
+  
+  <!-- Open Graph / Facebook (SEO & GEO) -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://amritahub.vercel.app" />
+  <meta property="og:title" content="Amrita Hub – Study Resources & Academic Portal for CSE" />
+  <meta property="og:description" content="Access and share peer-uploaded study notes, PYQs, course materials, and labs for Amrita School of Engineering B.Tech CSE." />
+  <meta property="og:image" content="https://amritahub.vercel.app/og-image.png" />
+  <meta property="og:site_name" content="Amrita Hub" />
+  
+  <!-- Twitter Card Metadata -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://amritahub.vercel.app" />
+  <meta name="twitter:title" content="Amrita Hub – Study Resources & Academic Portal for CSE" />
+  <meta name="twitter:description" content="Access and share peer-uploaded study notes, PYQs, course materials, and labs for Amrita School of Engineering B.Tech CSE." />
+  <meta name="twitter:image" content="https://amritahub.vercel.app/og-image.png" />
+  
+  <title>Amrita Hub – Study Resources & Academic Portal | Amrita School of Engineering</title>
+
+  <!-- Structured Data JSON-LD (SEO, GEO & AEO) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://amritahub.vercel.app/#website",
+        "url": "https://amritahub.vercel.app",
+        "name": "Amrita Hub",
+        "description": "Collaborative study resource and academic portal for Amrita School of Engineering B.Tech CSE.",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://amritahub.vercel.app/?search={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      },
+      {
+        "@type": "EducationalOrganization",
+        "@id": "https://amritahub.vercel.app/#organization",
+        "name": "Amrita Hub",
+        "url": "https://amritahub.vercel.app",
+        "logo": "https://amritahub.vercel.app/logo.png",
+        "description": "Student-driven portal for B.Tech Computer Science and Engineering (CSE) study resources at Amrita School of Engineering.",
+        "sameAs": [
+          "https://github.com/Bala-hecker/Amrita-Hub"
+        ],
+        "hasOfferCatalog": {
+          "@type": "OfferCatalog",
+          "name": "Amrita CSE Course Materials Catalog",
+          "itemListElement": [
+            {
+              "@type": "Course",
+              "name": "Computational Problem Solving",
+              "courseCode": "23CSE101",
+              "description": "Introductory programming, Python, algorithms, flowcharts, problem-solving techniques at Amrita School of Engineering.",
+              "provider": {
+                "@id": "https://amritahub.vercel.app/#organization"
+              }
+            },
+            {
+              "@type": "Course",
+              "name": "Discrete Mathematics",
+              "courseCode": "23MAT116",
+              "description": "Propositional logic, set theory, graph theory, combinatorics, proof techniques at Amrita School of Engineering.",
+              "provider": {
+                "@id": "https://amritahub.vercel.app/#organization"
+              }
+            },
+            {
+              "@type": "Course",
+              "name": "Data Structures and Algorithms",
+              "courseCode": "23CSE203",
+              "description": "Arrays, linked lists, stacks, queues, trees, graphs, sorting, searching, algorithm complexity at Amrita School of Engineering.",
+              "provider": {
+                "@id": "https://amritahub.vercel.app/#organization"
+              }
+            },
+            {
+              "@type": "Course",
+              "name": "Database Management Systems",
+              "courseCode": "23CSE202",
+              "description": "Relational algebra, SQL, database normalization, ER diagrams, transactions, concurrency at Amrita School of Engineering.",
+              "provider": {
+                "@id": "https://amritahub.vercel.app/#organization"
+              }
+            },
+            {
+              "@type": "Course",
+              "name": "Operating Systems",
+              "courseCode": "23CSE214",
+              "description": "Processes, threads, CPU scheduling, synchronization, deadlocks, memory management, file systems at Amrita School of Engineering.",
+              "provider": {
+                "@id": "https://amritahub.vercel.app/#organization"
+              }
+            },
+            {
+              "@type": "Course",
+              "name": "Machine Learning",
+              "courseCode": "23CSE301",
+              "description": "Supervised learning, unsupervised learning, neural networks, classification, regression, clustering at Amrita School of Engineering.",
+              "provider": {
+                "@id": "https://amritahub.vercel.app/#organization"
+              }
+            },
+            {
+              "@type": "Course",
+              "name": "Computer Networks",
+              "courseCode": "23CSE302",
+              "description": "TCP/IP protocol suite, socket programming, routing protocols, flow control, network security at Amrita School of Engineering.",
+              "provider": {
+                "@id": "https://amritahub.vercel.app/#organization"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "@type": "FAQPage",
+        "@context": "https://schema.org",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is Amrita Hub?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Amrita Hub is a collaborative academic resource sharing platform designed specifically for B.Tech Computer Science and Engineering (CSE) students at Amrita School of Engineering. It serves as a centralized portal for peer-to-peer sharing of exam notes, syllabus guides, lab files, and reference links."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Where can I find Past Year Question Papers (PYQs) for Amrita CSE?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Amrita Hub has a dedicated feed for Past Year Question Papers (PYQs), Mid-Semester, and End-Semester exams. You can browse, search by subject code, or filter by tags like #PYQ, #Mid-Sem, and #End-Sem to download resources instantly."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How can I request a missing study resource on Amrita Hub?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "If you cannot find a specific study guide or question paper, you can visit the 'Requests' page portal. Here you can submit a resource request specifying the course code and topic. Other students can view your request and fulfill it by uploading the file."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Do I need to log in to browse study materials?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No, guests can browse the dashboard, curriculum structure, top-voted files, and requests publicly. However, you will need to log in to upvote files, save materials, comment on posts, submit new requests, or upload new files."
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
   <noscript>You need to enable JavaScript to run this app.</noscript>

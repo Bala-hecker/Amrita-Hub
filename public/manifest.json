@@ -1,0 +1,20 @@
+{
+  "short_name": "AmritaHub",
+  "name": "Amrita Hub — B.Tech CSE Study Portal",
+  "description": "Study resources, PYQs, notes and curriculum for Amrita School of Engineering CSE students.",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#C0003C",
+  "background_color": "#F8F9FB",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "lang": "en-IN",
+  "scope": "/"
+}

@@ -14,7 +14,7 @@ const loginSchema = z.object({
 });
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, profile } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState("");
@@ -33,14 +33,20 @@ export default function Login() {
 
     try {
       await login(data.email, data.password);
+      // Small delay to let onAuthStateChange propagate the session state
+      await new Promise(r => setTimeout(r, 300));
       setLoading(false);
+      // Check if the account is banned — profile will have banned:true flag
+      if (profile?.banned) {
+        setAuthError(`🚫 Your account has been suspended. Reason: ${profile.ban_reason || "Policy violation"}. Contact admin.`);
+        return;
+      }
       navigate("/");
     } catch (err) {
       setLoading(false);
       console.error("Supabase login error:", err);
       const msg = err.message || JSON.stringify(err) || "Login failed. Please try again.";
       setAuthError(msg);
-      alert("Error: " + msg);
     }
   }
 
@@ -82,6 +88,11 @@ export default function Login() {
               {...register("password")}
             />
             {errors.password && <div className={s.errorText} style={{ color: 'red', fontSize: '0.8rem', marginTop: '4px' }}>{errors.password.message}</div>}
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "6px" }}>
+              <Link to="/forgot-password" style={{ fontSize: "0.78rem", color: "var(--cr)", fontWeight: "600", textDecoration: "none" }}>
+                Forgot Password?
+              </Link>
+            </div>
           </div>
           
           {authError && <div className={s.error}>{authError}</div>}

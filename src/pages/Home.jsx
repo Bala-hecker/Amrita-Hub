@@ -1,7 +1,7 @@
 // src/pages/Home.jsx
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Plus, Search, SlidersHorizontal, X } from "lucide-react";
-import { SEMESTERS } from "../data/curriculum";
 import { useResources } from "../hooks/useResources";
 import { useAuth } from "../context/AuthContext";
 import ResourceCard from "../components/ResourceCard";
@@ -12,20 +12,54 @@ const TYPES = ["All","Notes","PDF","Video","Article","Practice"];
 
 export default function Home() {
   const { user, profile } = useAuth();
-  const { resources, loading, error, addResource, toggleVote, toggleSave, deleteResource } = useResources();
+  const navigate = useNavigate();
+  const { resources, loading, error, addResource, toggleVote, toggleSave, deleteResource, reportResource, semesters } = useResources();
 
   const [showModal,   setShowModal]   = useState(false);
   const [searchQ,     setSearchQ]     = useState("");
   const [filterSub,   setFilterSub]   = useState("All");
   const [filterType,  setFilterType]  = useState("All");
+  const [filterTag,   setFilterTag]   = useState("All");
   const [sort,        setSort]        = useState("recent");
   const [sideOpen,    setSideOpen]    = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.state?.course) {
+      setFilterSub(location.state.course);
+    } else if (location.state?.courseCode) {
+      setFilterSub(location.state.courseCode);
+    }
+    if (location.state?.fulfillTitle) {
+      setShowModal(true);
+    }
+    document.title = "Study Resources & PYQs | Amrita Hub - B.Tech CSE Portal";
+  }, [location.state]);
+
+  const handleAddClick = () => {
+    if (!user) {
+      navigate("/login");
+    } else {
+      setShowModal(true);
+    }
+  };
+
+  const allTags = useMemo(() => {
+    const set = new Set(["Mid-Sem", "End-Sem", "PYQ", "Cheat Sheet", "Lab"]);
+    resources.forEach(r => {
+      if (Array.isArray(r.tags)) {
+        r.tags.forEach(t => t && set.add(t));
+      }
+    });
+    return ["All", ...Array.from(set)];
+  }, [resources]);
 
   const filtered = useMemo(() => {
     try {
       let list = [...resources];
       if (filterSub  !== "All") list = list.filter(r => r.course_code === filterSub);
       if (filterType !== "All") list = list.filter(r => r.type         === filterType);
+      if (filterTag  !== "All") list = list.filter(r => Array.isArray(r.tags) && r.tags.includes(filterTag));
       if (searchQ) {
         const q = searchQ.toLowerCase();
         list = list.filter(r =>
@@ -43,7 +77,7 @@ export default function Home() {
       console.error("Filtered useMemo error:", err);
       return resources;
     }
-  }, [resources, filterSub, filterType, searchQ, sort, user]);
+  }, [resources, filterSub, filterType, filterTag, searchQ, sort, user]);
 
   const countByCode = useMemo(() => {
     const m = {};
@@ -73,7 +107,9 @@ export default function Home() {
       {/* Hero */}
       <div className={s.hero}>
         <div className={s.heroLeft}>
-          <h1 className={s.heroTitle}>Welcome back, {firstName} 👋</h1>
+          <h1 className={s.heroTitle}>
+            {user ? `Welcome back, ${firstName} 👋` : "Welcome to AmritaHub 👋"}
+          </h1>
           <p className={s.heroSub}>Discover, share and organise CSE study materials with your peers</p>
         </div>
         <div className={s.heroStats}>
@@ -91,7 +127,7 @@ export default function Home() {
           <SlidersHorizontal size={15} />
           {filterSub !== "All" ? `Course: ${filterSub}` : "Filter by Course"}
         </button>
-        <button className={`btn btn-primary btn-sm ${s.mobileAdd}`} onClick={() => setShowModal(true)}>
+        <button className={`btn btn-primary btn-sm ${s.mobileAdd}`} onClick={handleAddClick}>
           <Plus size={14} /> Share
         </button>
       </div>
@@ -113,7 +149,7 @@ export default function Home() {
                 <span>All Courses</span>
                 <span className={`${s.cnt} ${filterSub === "All" ? s.cntActive : ""}`}>{resources.length}</span>
               </li>
-              {Object.entries(SEMESTERS).map(([sem, courses]) => (
+              {Object.entries(semesters || {}).map(([sem, courses]) => (
                 <div key={sem}>
                   <div className={s.semLabel}>{sem}</div>
                   {courses.map(c => (
@@ -154,7 +190,13 @@ export default function Home() {
           {/* Sort tabs */}
           <div className={s.sortTabs}>
             {[["recent","🕐 Recent"],["votes","⭐ Top Voted"],["mine","👤 My Uploads"]].map(([k,l]) => (
-              <button key={k} className={`${s.sortTab} ${sort===k?s.sortActive:""}`} onClick={()=>setSort(k)}>{l}</button>
+              <button key={k} className={`${s.sortTab} ${sort===k?s.sortActive:""}`} onClick={() => {
+                if (k === "mine" && !user) {
+                  navigate("/login");
+                } else {
+                  setSort(k);
+                }
+              }}>{l}</button>
             ))}
           </div>
 
@@ -176,17 +218,43 @@ export default function Home() {
                   onClick={() => setFilterType(t)}>{t}</button>
               ))}
             </div>
-            <button className={`btn btn-primary ${s.desktopAdd}`} onClick={() => setShowModal(true)}>
+            <button className={`btn btn-primary ${s.desktopAdd}`} onClick={handleAddClick}>
               <Plus size={15} /> Share Resource
             </button>
           </div>
 
+          {/* Tags Filter */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", margin: "12px 0 0", padding: "4px 0" }}>
+            <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--muted)", alignSelf: "center", marginRight: "4px" }}>Filter by Tag:</span>
+            {allTags.map(tag => (
+              <button
+                key={tag}
+                style={{
+                  padding: "4px 10px",
+                  borderRadius: "15px",
+                  fontSize: "0.72rem",
+                  fontWeight: 600,
+                  border: "1px solid var(--bdr)",
+                  background: filterTag === tag ? "var(--cr)" : "var(--white)",
+                  color: filterTag === tag ? "white" : "var(--txt)",
+                  borderColor: filterTag === tag ? "var(--cr)" : "var(--bdr)",
+                  transition: "all 0.15s",
+                  cursor: "pointer"
+                }}
+                onClick={() => setFilterTag(tag)}
+              >
+                {tag === "All" ? "All Tags" : `#${tag}`}
+              </button>
+            ))}
+          </div>
+
           {/* Result count */}
-          {(searchQ || filterSub !== "All" || filterType !== "All") && (
+          {(searchQ || filterSub !== "All" || filterType !== "All" || filterTag !== "All") && (
             <div className={s.resultMeta}>
               {filtered.length} result{filtered.length !== 1 ? "s" : ""}
               {filterSub !== "All" && <span className={s.metaTag}>{filterSub} <button onClick={() => setFilterSub("All")}>×</button></span>}
               {filterType !== "All" && <span className={s.metaTag}>{filterType} <button onClick={() => setFilterType("All")}>×</button></span>}
+              {filterTag !== "All" && <span className={s.metaTag}>#{filterTag} <button onClick={() => setFilterTag("All")}>×</button></span>}
               {searchQ && <span className={s.metaTag}>"{searchQ}" <button onClick={() => setSearchQ("")}>×</button></span>}
             </div>
           )}
@@ -214,7 +282,7 @@ export default function Home() {
             <div className={s.grid}>
               {filtered.map((r, i) => (
                 <div key={r.id} style={{ animationDelay: `${Math.min(i * 35, 280)}ms` }}>
-                  <ResourceCard resource={r} onVote={toggleVote} onSave={toggleSave} onDelete={deleteResource} />
+                  <ResourceCard resource={r} onVote={toggleVote} onSave={toggleSave} onDelete={deleteResource} onReport={reportResource} />
                 </div>
               ))}
             </div>
@@ -223,7 +291,17 @@ export default function Home() {
       </div>
 
       {showModal && (
-        <AddResourceModal onClose={() => setShowModal(false)} onSubmit={addResource} />
+        <AddResourceModal
+          onClose={() => {
+            setShowModal(false);
+            if (location.state) {
+              window.history.replaceState({}, document.title);
+            }
+          }}
+          onSubmit={addResource}
+          prefillCourse={location.state?.courseCode}
+          prefillTitle={location.state?.fulfillTitle}
+        />
       )}
     </div>
   );

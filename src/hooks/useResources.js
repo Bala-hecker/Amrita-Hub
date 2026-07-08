@@ -1,7 +1,8 @@
 // src/hooks/useResources.js
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "../supabase";
 import { useAuth } from "../context/AuthContext";
+import { SEMESTERS as STATIC_SEMESTERS, ELECTIVES as STATIC_ELECTIVES } from "../data/curriculum";
 
 export function useResources() {
   const { user, profile } = useAuth();
@@ -16,6 +17,26 @@ export function useResources() {
   const [loading,   setLoading]   = useState(resources.length === 0);
   const [error,     setError]     = useState(null);
 
+  const [dbCourses, setDbCourses] = useState([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
+
+  // Prepare static curriculum data
+  const staticSemList = useMemo(() => 
+    Object.entries(STATIC_SEMESTERS).flatMap(([sem, list]) =>
+      list.map(c => ({ ...c, semester: sem, isElective: false }))
+    )
+  , []);
+
+  const staticElecList = useMemo(() => 
+    Object.entries(STATIC_ELECTIVES).flatMap(([track, list]) =>
+      list.map(c => ({ ...c, credits: 3, cat: "CSE", semester: track, isElective: true }))
+    )
+  , []);
+
+  const staticAllList = useMemo(() => 
+    [...staticSemList, ...staticElecList]
+  , [staticSemList, staticElecList]);
+
   const fetchResources = useCallback(async () => {
     setError(null);
     try {
@@ -29,9 +50,10 @@ export function useResources() {
         throw new Error(`Failed to load resources: HTTP ${res.status}`);
       }
       const data = await res.json();
-      setResources(data || []);
+      const filteredData = (data || []).filter(r => !(Array.isArray(r.reports) && r.reports.length > 0));
+      setResources(filteredData);
       try {
-        localStorage.setItem("amrita_resources_cache", JSON.stringify(data || []));
+        localStorage.setItem("amrita_resources_cache", JSON.stringify(filteredData));
       } catch (e) {}
     } catch (err) {
       setError("Could not load resources. Check your connection.");
@@ -41,12 +63,34 @@ export function useResources() {
     }
   }, []);
 
+  const fetchCourses = useCallback(async () => {
+    try {
+      const res = await fetch(`${process.env.REACT_APP_SUPABASE_URL}/rest/v1/courses?select=*`, {
+        method: "GET",
+        headers: {
+          "apikey": process.env.REACT_APP_SUPABASE_ANON_KEY,
+          "Authorization": `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDbCourses(data || []);
+      }
+    } catch (err) {
+      console.error("Failed to load courses from DB:", err);
+    } finally {
+      setCoursesLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchResources();
+    fetchCourses();
 
     const handleFocus = () => {
       if (document.visibilityState === "visible") {
         fetchResources();
+        fetchCourses();
       }
     };
     document.addEventListener("visibilitychange", handleFocus);
@@ -56,10 +100,73 @@ export function useResources() {
       document.removeEventListener("visibilitychange", handleFocus);
       window.removeEventListener("focus", handleFocus);
     };
-  }, [fetchResources]);
+  }, [fetchResources, fetchCourses]);
+
+  const { semesters, electives, allCourses } = useMemo(() => {
+    const list = dbCourses.length > 0 ? dbCourses : staticAllList;
+    
+    // Construct semesters mapping
+    const sems = {
+      "Semester I": [],
+      "Semester II": [],
+      "Semester III": [],
+      "Semester IV": [],
+      "Semester V": [],
+      "Semester VI": [],
+      "Semester VII": [],
+      "Semester VIII": [],
+    };
+    
+    // Construct electives mapping
+    const elecs = {};
+
+    list.forEach(c => {
+      const courseObj = {
+        code: c.code,
+        title: c.title,
+        credits: parseInt(c.credits) || 3,
+        cat: c.cat || "CSE"
+      };
+
+      if (sems[c.semester] !== undefined) {
+        sems[c.semester].push(courseObj);
+      } else {
+        if (!elecs[c.semester]) {
+          elecs[c.semester] = [];
+        }
+        elecs[c.semester].push(courseObj);
+      }
+    });
+
+    return { semesters: sems, electives: elecs, allCourses: list };
+  }, [dbCourses, staticAllList]);
+
+  const getCourse = useCallback((code) => {
+    return allCourses.find(c => c.code === code);
+  }, [allCourses]);
+
+  // ── Spam detection constants ─────────────────────────────────────────────
+  const SPAM_KEYWORDS = [
+    "buy now", "click here", "free money", "exam leak", "paper leak",
+    "answer key leak", "guaranteed pass", "get rich", "earn daily",
+    "whatsapp group", "telegram link", "join now", "unlimited access",
+    "crack", "keygen", "serial key", "activation code", "pirated",
+    "xxx", "adult", "18+", "hot girls", "dating",
+  ];
+  const SPAM_EXTENSIONS = [".exe", ".bat", ".cmd", ".vbs", ".msi", ".sh", ".ps1"];
+
+  function isSpam({ title, description, file }) {
+    const text = `${title} ${description || ""}`.toLowerCase();
+    if (SPAM_KEYWORDS.some(kw => text.includes(kw))) return true;
+    if (file) {
+      const name = file.name.toLowerCase();
+      if (SPAM_EXTENSIONS.some(ext => name.endsWith(ext))) return true;
+    }
+    return false;
+  }
 
   // ── Add resource (file upload OR link) ──────────────────────────────────
-  async function addResource({ title, courseCode, type, link, description, file }, onProgress) {
+  async function addResource({ title, courseCode, type, link, description, file, tags }, onProgress) {
     if (!user) throw new Error("Not authenticated");
 
     let token = process.env.REACT_APP_SUPABASE_ANON_KEY;
@@ -130,6 +237,8 @@ export function useResources() {
       onProgress?.(100);
     }
 
+    const spamDetected = isSpam({ title, description, file });
+
     const newResource = {
       title:         title.trim(),
       course_code:   courseCode,
@@ -143,6 +252,9 @@ export function useResources() {
       voted_by:      [],
       saved_by:      [],
       comments:      [],
+      tags:          tags || [],
+      // Auto-flag spam: pre-populate reports so it's immediately hidden from feeds
+      reports:       spamDetected ? ["auto-spam-flag"] : [],
     };
 
     // Database insert using raw REST fetch to completely bypass SDK hangs
@@ -172,6 +284,11 @@ export function useResources() {
     try {
       localStorage.setItem("amrita_resources_cache", JSON.stringify([insertedItem, ...resources]));
     } catch (e) {}
+
+    // Return spam warning so the caller (AddResourceModal) can show a warning
+    if (spamDetected) {
+      return { spamWarning: true };
+    }
   }
 
   // ── Toggle upvote ────────────────────────────────────────────────────────
@@ -296,6 +413,34 @@ export function useResources() {
     }
   }
 
+  // ── Report resource ────────────────────────────────────────────────────────
+  async function reportResource(resourceId) {
+    if (!user) return;
+    const r = resources.find(x => x.id === resourceId);
+    if (!r) return;
+
+    // Check if user has already reported this resource
+    const reportsList = Array.isArray(r.reports) ? r.reports : [];
+    const hasReported = reportsList.some(rep => rep.uid === user.id);
+    if (hasReported) return; // Only allow one report per user
+
+    const newReport = {
+      uid: user.id,
+      reportedAt: Date.now()
+    };
+    const updatedReports = [...reportsList, newReport];
+
+    // Filter it out of the local resources list immediately since it now has reports
+    setResources(prev => prev.filter(x => x.id !== resourceId));
+
+    const { error } = await supabase
+      .from("resources")
+      .update({ reports: updatedReports })
+      .eq("id", resourceId);
+
+    if (error) fetchResources();
+  }
+
   return {
     resources,
     loading,
@@ -305,6 +450,15 @@ export function useResources() {
     toggleSave,
     addComment,
     deleteResource,
+    reportResource,
     refetch: fetchResources,
+    // Dynamic curriculum exports
+    semesters,
+    electives,
+    allCourses,
+    getCourse,
+    fetchCourses,
+    coursesLoading,
+    staticAllList
   };
 }

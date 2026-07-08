@@ -20,7 +20,7 @@
 .mobileBar {
   display: none;
   padding: 12px 14px; gap: 8px;
-  background: white; border-bottom: 1px solid var(--bdr);
+  background: var(--white); border-bottom: 1px solid var(--bdr);
 }
 .filterToggle {
   flex: 1; display:flex; align-items:center; gap:7px;
@@ -51,7 +51,7 @@
   overflow-y: auto;
 }
 .sideCard {
-  background: white; border-radius: var(--radius);
+  background: var(--white); border-radius: var(--radius);
   border: 1px solid var(--bdr); padding: 14px 16px;
   box-shadow: var(--sh);
 }
@@ -91,7 +91,7 @@
 .feed { min-width:0; }
 
 .sortTabs {
-  display:flex; gap:3px; background:white; border-radius:11px; padding:3px;
+  display:flex; gap:3px; background:var(--white); border-radius:11px; padding:3px;
   border:1px solid var(--bdr); margin-bottom:14px;
 }
 .sortTab {
@@ -113,7 +113,7 @@
 }
 .searchInput {
   width:100%; padding:10px 36px 10px 38px; border:1.5px solid var(--bdr);
-  border-radius:10px; font-size:.9rem; background:white; outline:none; transition:all .2s;
+  border-radius:10px; font-size:.9rem; background:var(--white); outline:none; transition:all .2s;
 }
 .searchInput:focus { border-color:var(--cr); box-shadow:0 0 0 3px rgba(192,0,60,.08); }
 .clearSearch {
@@ -125,7 +125,7 @@
 .typeTabs { display:flex; gap:4px; flex-wrap:wrap; }
 .typeTab {
   padding:7px 11px; border-radius:20px; border:1.5px solid var(--bdr);
-  background:white; font-size:.77rem; font-weight:600; color:var(--muted);
+  background:var(--white); font-size:.77rem; font-weight:600; color:var(--muted);
   transition:all .13s; white-space:nowrap;
 }
 .typeTab:hover { border-color:var(--cr); color:var(--cr); }

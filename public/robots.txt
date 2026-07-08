@@ -1,0 +1,29 @@
+# robots.txt for Amrita Hub — Amrita School of Engineering CSE Portal
+# https://amritahub.vercel.app
+
+User-agent: *
+Allow: /
+Allow: /trending
+Allow: /curriculum
+Allow: /requests
+Disallow: /profile
+Disallow: /saved
+
+# AI Crawlers — allowed for GEO/AEO visibility
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Anthropic-AI
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+# Sitemap
+Sitemap: https://amritahub.vercel.app/sitemap.xml

@@ -1,6 +1,6 @@
 /* src/components/ResourceCard.module.css */
 .card {
-  background: white; border-radius: var(--radius);
+  background: var(--white); border-radius: var(--radius);
   border: 1.5px solid var(--bdr); padding: 18px 18px 14px;
   position: relative; overflow: hidden;
   display: flex; flex-direction: column;
