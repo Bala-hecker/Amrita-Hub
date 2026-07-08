@@ -1,4 +1,5 @@
 // src/App.jsx
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { AuthProvider }    from "./context/AuthContext";
 import ProtectedRoute      from "./components/ProtectedRoute";
@@ -27,6 +28,13 @@ function Layout() {
 import { supabase } from "./supabase";
 
 export default function App() {
+  useEffect(() => {
+    // If user clicked email reset password link, redirect to reset-password page preserving the hash tokens
+    if (window.location.hash.includes("type=recovery") && window.location.pathname !== "/reset-password") {
+      window.location.replace("/reset-password" + window.location.hash);
+    }
+  }, []);
+
   if (!supabase) {
     return (
       <div style={{ padding: "50px", textAlign: "center", color: "red", fontFamily: "sans-serif" }}>
