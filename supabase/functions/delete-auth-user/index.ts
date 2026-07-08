@@ -67,6 +67,12 @@ Deno.serve(async (req) => {
     // Delete the auth user (this fully removes login access)
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
     if (deleteError) {
+      if (deleteError.message?.toLowerCase().includes("user not found")) {
+        return new Response(
+          JSON.stringify({ success: true, message: `User already deleted or not found in auth.` }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       return new Response(
         JSON.stringify({ error: deleteError.message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
